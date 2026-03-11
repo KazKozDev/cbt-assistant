@@ -1,0 +1,10 @@
+fastapi>=0.100.0
+edge-tts>=6.1.12
+httpx>=0.28.1
+numpy>=1.26.0
+pydantic>=2.0.0
+PyYAML>=6.0.0
+uvicorn>=0.30.0
+pytest>=8.0.0
+pytest-asyncio>=0.23.0
+pytest-cov>=4.0.0

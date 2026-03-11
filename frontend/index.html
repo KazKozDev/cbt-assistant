@@ -1,0 +1,962 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>КПТ Ассистент</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="css/style.css?v=22">
+</head>
+
+<body>
+    <aside class="sidebar">
+        <button class="sidebar-btn" onclick="openThoughtHistoryModal()" title="Дневник мыслей" data-i18n-title="sidebar_thoughts"><i
+                data-lucide="notebook-pen" style="width:20px"></i></button>
+        <button class="sidebar-btn" onclick="openSleepHistoryModal()" title="Дневник сна" data-i18n-title="sidebar_sleep"><i data-lucide="moon"
+                style="width:20px"></i></button>
+        <button class="sidebar-btn" onclick="openModal('testsMenuModal')" title="Самооценка" data-i18n-title="sidebar_assessment"><i
+                data-lucide="clipboard-list" style="width:20px"></i></button>
+        <button class="sidebar-btn" onclick="openCalendar()" title="Календарь записей" data-i18n-title="sidebar_calendar"><i data-lucide="calendar"
+                style="width:20px"></i></button>
+        <button class="sidebar-btn" onclick="openDashboard()" title="Дашборд прогресса" data-i18n-title="sidebar_dashboard"><i data-lucide="bar-chart-2"
+                style="width:20px"></i></button>
+        <button class="sidebar-btn" onclick="openArticleLibrary()" title="Библиотека статей" data-i18n-title="sidebar_articles"><i data-lucide="book-open"
+                style="width:20px"></i></button>
+        <button class="sidebar-btn" onclick="openVideoLibrary()" title="Видео-библиотека" data-i18n-title="sidebar_videos"><i data-lucide="play-circle"
+                style="width:20px"></i></button>
+
+        <!-- Download button pinned to bottom -->
+        <div
+            style="margin-top:auto; width:100%; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 12px; display:flex; flex-direction:column; align-items:center; gap:4px;">
+            <button class="sidebar-btn" onclick="openNotifModal()" title="Настройки" data-i18n-title="sidebar_settings" id="notifSidebarBtn"><i
+                    data-lucide="settings-2" style="width:20px"></i></button>
+            <button class="sidebar-btn" onclick="openModal('downloadModal')" title="Скачать выписку" data-i18n-title="sidebar_download"><i
+                    data-lucide="download" style="width:20px"></i></button>
+        </div>
+    </aside>
+
+    <div class="container empty-state" id="mainContainer">
+        <div class="header">
+            <div style="display:flex; align-items:center; gap:8px;">
+                <i data-lucide="brain"></i>
+                <span style="font-weight: 500; color: var(--text);" data-i18n="app_title">КПТ Ассистент</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:12px;">
+                <button onclick="openModal('sosModal')"
+                    style="background:#797298 !important; color:#ffffff !important; border:none; border-radius:10px; padding:7px 14px; font-size:12px; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:6px; letter-spacing:0.3px;"><i
+                        data-lucide="life-buoy" style="width:14px; color:#ffffff;"></i> <span data-i18n="sos_button">SOS</span></button>
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <span class="status-dot" id="dotStatus"></span>
+                    <span id="txtStatus" data-i18n="status_connecting">Подключение...</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="chat-box" id="messages">
+        </div>
+        <div class="input-dock" style="padding-top:8px;">
+            <div class="input-wrap"
+                style="flex-direction: column; align-items: stretch; padding: 12px 16px; border-radius: 16px;">
+
+                <textarea id="msgInput" rows="1" placeholder="Как я могу помочь вам сегодня?" data-i18n-placeholder="input_placeholder"
+                    style="min-height: 36px; width: 100%; border:none; resize:none; background:transparent; outline:none; font-family:inherit; font-size:15px; overflow:hidden;"
+                    onkeydown="if(event.key==='Enter' && !event.shiftKey){event.preventDefault(); sendMessage();}"></textarea>
+
+                <div style="display: flex; justify-content: flex-end; align-items: center; margin-top: 4px;">
+                    <!-- Right: Mic, Send -->
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <button class="btn-icon" id="ttsBtn" onclick="toggleTTS()" title="Озвучка ассистента" data-i18n-title="tts_title"
+                            style="padding:4px;"><i data-lucide="volume-x" style="width:18px;"></i></button>
+                        <button class="btn-icon" id="micBtn" onclick="toggleMic()" title="Голосовой ввод" data-i18n-title="mic_title"
+                            style="padding:4px;"><i data-lucide="mic" style="width:18px;"></i></button>
+                        <button class="btn-send" id="sendBtn" onclick="sendMessage()"><i data-lucide="arrow-up"
+                                style="width:18px;"></i></button>
+                    </div>
+                </div>
+            </div>
+
+            <p
+                style="text-align:center; font-size:11px; color:var(--gray); opacity:0.6; margin:6px 0 0; letter-spacing:0.1px;">
+                <span data-i18n="assistant_disclaimer">Ассистент может ошибаться. При остром состоянии обратитесь к специалисту.</span>
+            </p>
+
+            <div id="quickSuggestions"
+                style="display:flex; flex-wrap:wrap; justify-content:center; gap:8px; padding-top:16px; align-items:center;"></div>
+        </div> <!-- /quickSuggestions -->
+    </div> <!-- /input-dock -->
+    </div> <!-- /container -->
+
+    <!-- Mood Modal -->
+    <div class="modal-overlay" id="moodModal" onclick="if(event.target===this)closeModal('moodModal')">
+        <div class="modal">
+            <h2><span data-i18n="mood_modal_title">Настроение</span> <button class="close" onclick="closeModal('moodModal')"><i data-lucide="x"
+                        style="width:20px"></i></button></h2>
+            <div style="text-align:center; margin: 20px 0;">
+                <div style="font-size: 36px; font-weight: 500; color: var(--accent); margin-bottom: 24px;"
+                    id="moodValLabel">5 / 10</div>
+                <input type="range" id="moodSlider" min="0" max="10" value="5"
+                    style="width:100%; margin-bottom: 24px; appearance: none; height: 4px; background: var(--border); border-radius: 2px;"
+                    oninput="document.getElementById('moodValLabel').innerText = this.value + ' / 10'">
+                <button class="btn-primary static-accent" onclick="logMood()" data-i18n="mood_log_button">Записать состояние</button>
+                <div id="moodHistory" style="margin-top:20px; font-size:13px; color:var(--gray);"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Thought Record Modal -->
+    <div class="modal-overlay" id="thoughtModal" onclick="if(event.target===this)closeModal('thoughtModal')">
+        <div class="modal" style="max-width:620px;">
+            <div class="thought-modal-head">
+                <span id="thoughtModalTitle" class="thought-modal-title" data-i18n="thought_modal_title">Мысли и действия</span>
+                <button class="close" onclick="closeModal('thoughtModal')"><i
+                        data-lucide="x" style="width:20px"></i></button>
+            </div>
+            <div class="thought-modal-top">
+                <div class="type-toggle">
+                    <button type="button" class="type-toggle-btn active" id="ttBtn0" onclick="switchThoughtType('thought')"><i
+                            data-lucide="notebook-pen" style="width:13px;"></i> <span data-i18n="thought_tab_diary">Дневник мыслей</span></button>
+                    <button type="button" class="type-toggle-btn" id="ttBtn1" onclick="switchThoughtType('gratitude')"><i data-lucide="heart"
+                            style="width:13px;"></i> <span data-i18n="thought_tab_gratitude">Благодарность</span></button>
+                    <button type="button" class="type-toggle-btn" id="ttBtn2" onclick="switchThoughtType('rhythm')"><i data-lucide="check-square"
+                            style="width:13px;"></i> <span data-i18n="thought_tab_rhythm">Ритм дня</span></button>
+                </div>
+            </div>
+            <p id="thoughtModalHint" style="font-size:13px; color:var(--gray); margin:-6px 0 18px; line-height:1.5;" data-i18n="thought_modal_hint">
+                Запишите ситуацию, мысль и более бережный взгляд на неё.
+            </p>
+            <form onsubmit="submitThought(event)" id="tForm">
+                <!-- Full thought form -->
+                <div id="thoughtFormFull">
+                    <div class="fg"><label data-i18n="thought_label_situation">Ситуация (Что произошло?)</label><textarea id="tSit" rows="2"></textarea>
+                    </div>
+                    <div class="fg"><label data-i18n="thought_label_thought">Автоматическая мысль (О чем подумали?)</label><textarea id="tThou"
+                            rows="2"></textarea></div>
+                    <div style="display:flex; gap:16px;">
+                        <div class="fg" style="flex:1;"><label data-i18n="thought_label_emotion">Эмоция</label><input type="text" id="tEmo"
+                                placeholder="Например: тревога" data-i18n-placeholder="thought_placeholder_emotion"></div>
+                        <div class="fg" style="width:100px;"><label data-i18n="thought_label_intensity">Сила (0-10)</label><input type="number" id="tInt"
+                                min="0" max="10" value="5"></div>
+                    </div>
+                    <div class="fg"><label data-i18n="thought_label_distortion">Когнитивное искажение</label>
+                        <select id="tDist">
+                            <option data-i18n="distortion_catastrophizing">Катастрофизация</option>
+                            <option data-i18n="distortion_mind_reading">Чтение мыслей</option>
+                            <option data-i18n="distortion_fortune_telling">Предсказание будущего</option>
+                            <option data-i18n="distortion_overgeneralization">Сверхобобщение</option>
+                            <option data-i18n="distortion_black_white">Чёрно-белое мышление</option>
+                            <option data-i18n="distortion_discounting_positive">Обесценивание позитивного</option>
+                            <option data-i18n="distortion_personalization">Персонализация</option>
+                            <option data-i18n="distortion_unsure">Не знаю</option>
+                        </select>
+                    </div>
+                    <div class="fg"><label data-i18n="thought_label_response">Рациональный ответ</label><textarea id="tRat" rows="2"></textarea></div>
+                </div>
+                <!-- Gratitude form -->
+                <div id="gratitudeFormSection" style="display:none;">
+                    <p style="font-size:13px; color:var(--gray); margin-bottom:14px; line-height:1.6;" data-i18n="gratitude_prompt">Запишите 3 вещи,
+                        за которые вы благодарны сегодня — большие или маленькие.</p>
+                    <div class="fg"><label data-i18n="gratitude_label">За что я благодарен(а)?</label><textarea id="gratText" rows="5"
+                            placeholder="1. &#10;2. &#10;3. " data-i18n-placeholder="gratitude_placeholder"></textarea></div>
+                </div>
+                <button type="submit" class="btn-primary static-accent" id="tSub" data-i18n="thought_save">Сохранить мысль</button>
+            </form>
+            <div id="rhythmSection" style="display:none;">
+                <div id="actSlots" style="display:flex; flex-direction:column; gap:12px; margin-bottom:20px;"></div>
+                <div id="actStats"
+                    style="text-align:center; font-size:13px; color:var(--text); display:none; padding:16px; background:var(--bg); border-radius:12px; border:1px solid var(--border);">
+                </div>
+            </div>
+            <div id="actMoodPopup"
+                style="display:none; position:fixed; inset:0; z-index:210; background:rgba(0,0,0,0.4); align-items:center; justify-content:center;">
+                <div
+                    style="background:var(--panel); border-radius:16px; padding:24px; max-width:300px; text-align:center; box-shadow: 0 8px 32px rgba(0,0,0,0.2);">
+                    <p style="font-size:14px; color:var(--text); margin-bottom:4px; font-weight:600;" data-i18n="rhythm_mood_after">Как настроение
+                        после?</p>
+                    <p id="actMoodTask" style="font-size:12px; color:var(--gray); margin-bottom:16px;"></p>
+                    <div style="display:flex; justify-content:center; gap:6px; margin-bottom:12px;" id="actMoodStars">
+                    </div>
+                    <button onclick="skipActMood()"
+                        style="background:none; border:none; color:var(--gray); font-size:12px; cursor:pointer;" data-i18n="skip">Пропустить</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tests Menu Modal -->
+    <div class="modal-overlay" id="testsMenuModal" onclick="if(event.target===this)closeModal('testsMenuModal')">
+        <div class="modal">
+            <h2><span data-i18n="assessment_title">Самооценка</span> <button class="close" onclick="closeModal('testsMenuModal')"><i data-lucide="x"
+                        style="width:20px"></i></button></h2>
+            <div style="display:flex; flex-direction:column; gap:16px; margin-top:20px;">
+                <button class="test-menu-btn" onclick="closeModal('testsMenuModal'); openModal('phqModal')"
+                    style="display:flex; align-items:center; gap:16px; font-size:15px; padding:16px; background:var(--bg); border:1px solid var(--border); color:var(--text); border-radius:12px; cursor:pointer; text-align:left; transition:all 0.2s;">
+                    <div
+                        style="background:var(--accent-light); color:var(--accent); padding:10px; border-radius:10px; display:flex;">
+                        <i data-lucide="clipboard-list" style="width:24px; height:24px;"></i>
+                    </div>
+                    <div style="flex:1;">
+                        <div style="font-weight:600; margin-bottom:4px; font-size:15px;" data-i18n="assessment_phq_title">Депрессия (PHQ-9)</div>
+                        <div style="font-size:13px; color:var(--gray); font-weight:normal; line-height:1.4;" data-i18n="assessment_phq_desc">Скрининг
+                            выраженности симптомов депрессии и снижения настроения</div>
+                    </div>
+                </button>
+
+                <button class="test-menu-btn" onclick="closeModal('testsMenuModal'); openModal('gadModal')"
+                    style="display:flex; align-items:center; gap:16px; font-size:15px; padding:16px; background:var(--bg); border:1px solid var(--border); color:var(--text); border-radius:12px; cursor:pointer; text-align:left; transition:all 0.2s;">
+                    <div
+                        style="background:var(--accent-light); color:var(--accent); padding:10px; border-radius:10px; display:flex;">
+                        <i data-lucide="activity" style="width:24px; height:24px;"></i>
+                    </div>
+                    <div style="flex:1;">
+                        <div style="font-weight:600; margin-bottom:4px; font-size:15px;" data-i18n="assessment_gad_title">Тревожность (GAD-7)</div>
+                        <div style="font-size:13px; color:var(--gray); font-weight:normal; line-height:1.4;" data-i18n="assessment_gad_desc">Оценка
+                            общего уровня тревоги и беспокойства</div>
+                    </div>
+                </button>
+
+                <button class="test-menu-btn" onclick="closeModal('testsMenuModal'); openModal('esteemModal')"
+                    style="display:flex; align-items:center; gap:16px; font-size:15px; padding:16px; background:var(--bg); border:1px solid var(--border); color:var(--text); border-radius:12px; cursor:pointer; text-align:left; transition:all 0.2s;">
+                    <div
+                        style="background:var(--accent-light); color:var(--accent); padding:10px; border-radius:10px; display:flex;">
+                        <i data-lucide="heart-handshake" style="width:24px; height:24px;"></i>
+                    </div>
+                    <div style="flex:1;">
+                        <div style="font-weight:600; margin-bottom:4px; font-size:15px;" data-i18n="assessment_esteem_title">Самооценка (Розенберг)</div>
+                        <div style="font-size:13px; color:var(--gray); font-weight:normal; line-height:1.4;" data-i18n="assessment_esteem_desc">Оценка
+                            отношения к себе, самоуважения и внутренней опоры</div>
+                    </div>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- PHQ-9 Modal -->
+    <div class="modal-overlay" id="phqModal" onclick="if(event.target===this)closeModal('phqModal')">
+        <div class="modal" style="max-width:580px;">
+            <h2><span data-i18n="phq_modal_title">PHQ-9 — Скрининг депрессии</span> <button class="close" onclick="closeModal('phqModal')"><i
+                        data-lucide="x" style="width:20px"></i></button></h2>
+            <p style="color:var(--gray);font-size:13px;margin-bottom:20px;" data-i18n="phq_modal_desc">На протяжении последних двух недель, как
+                часто вас беспокоили следующие проблемы?</p>
+            <form id="phqForm" onsubmit="submitPHQ(event)">
+                <div id="phqQuestions"></div>
+                <button type="submit" class="btn-primary static-accent" style="margin-top:8px;" data-i18n="get_result">Получить результат</button>
+            </form>
+            <div id="phqResult"
+                style="display:none; margin-top:20px; padding:20px; border-radius:12px; border:1px solid var(--border); background:var(--bg);">
+            </div>
+        </div>
+    </div>
+
+    <!-- Calendar Modal -->
+    <div class="modal-overlay" id="calModal" onclick="if(event.target===this)closeModal('calModal')">
+        <div class="modal" style="max-width:720px; padding:24px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                <div style="display:flex; align-items:center; gap:12px;">
+                    <button onclick="calPrev()" class="close"><i data-lucide="chevron-left"
+                            style="width:20px"></i></button>
+                    <h2 style="margin:0; font-size:18px;" id="calTitle"></h2>
+                    <button onclick="calNext()" class="close"><i data-lucide="chevron-right"
+                            style="width:20px"></i></button>
+                </div>
+                <button class="close" onclick="closeModal('calModal')"><i data-lucide="x"
+                        style="width:20px"></i></button>
+            </div>
+            <div style="display:flex; gap:20px;">
+                <div style="flex:0 0 300px;">
+                    <div class="cal-grid-head"></div>
+                    <div id="calGrid" class="cal-grid"></div>
+                    <div style="display:flex; gap:10px; margin-top:12px; flex-wrap:wrap;">
+                        <span style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--gray);"><span
+                                style="width:8px;height:8px;background:var(--accent);border-radius:50%;display:inline-block;flex-shrink:0;"></span>
+                            <span data-i18n="calendar_legend_thoughts">Мысли</span></span>
+                        <span style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--gray);"><span
+                                style="width:8px;height:8px;background:#f59e0b;border-radius:50%;display:inline-block;flex-shrink:0;"></span>
+                            <span data-i18n="calendar_legend_mood">Настроение</span></span>
+                        <span style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--gray);"><span
+                                style="width:8px;height:8px;background:#38bdf8;border-radius:50%;display:inline-block;flex-shrink:0;"></span>
+                            <span data-i18n="calendar_legend_sleep">Сон</span></span>
+                        <span style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--gray);"><span
+                                style="width:8px;height:8px;background:#10b981;border-radius:50%;display:inline-block;flex-shrink:0;"></span>
+                            <span data-i18n="calendar_legend_activities">Активности</span></span>
+                        <span style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--gray);"><span
+                                style="width:8px;height:8px;background:#ef4444;border-radius:50%;display:inline-block;flex-shrink:0;"></span>
+                            <span data-i18n="calendar_legend_assessment">Самооценка</span></span>
+                    </div>
+                </div>
+                <div style="flex:1; border-left:1px solid var(--border); padding-left:20px; min-height:300px;">
+                    <div id="calDayTitle" style="font-size:14px;font-weight:600;margin-bottom:16px;color:var(--gray);">
+                        <span data-i18n="calendar_pick_day">Выберите день</span></div>
+                    <div id="calDayContent" style="font-size:13px; line-height:1.6;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dashboard Modal -->
+    <div class="modal-overlay" id="dashModal" onclick="if(event.target===this)closeModal('dashModal')">
+        <div class="modal" style="max-width:700px; padding:28px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;">
+                <h2 style="margin:0; display:flex;align-items:center;gap:8px;"><i data-lucide="bar-chart-2"
+                        style="width:20px;color:var(--accent)"></i> <span data-i18n="dashboard_title">Дашборд прогресса</span></h2>
+                <button class="close" onclick="closeModal('dashModal')"><i data-lucide="x"
+                        style="width:20px"></i></button>
+            </div>
+            <!-- Stat cards -->
+
+            <!-- AI Insights Section -->
+            <div
+                style="background: var(--accent-light); border-radius: 12px; padding: 16px 20px; margin-bottom: 20px; position:relative;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                    <div
+                        style="display:flex; align-items:center; gap:8px; font-size:13px; font-weight:600; color:var(--accent);">
+                        <i data-lucide="sparkles" style="width:15px;"></i> <span data-i18n="dashboard_insights">Наблюдения</span>
+                    </div>
+                    <button id="dashInsightsBtn" onclick="loadInsights()"
+                        style="font-size:11px; background:none; border:1px solid var(--accent); color:var(--accent); border-radius:20px; padding:3px 10px; cursor:pointer; opacity:0.75;">
+                        <span data-i18n="refresh">обновить</span>
+                    </button>
+                </div>
+                <p id="dashInsightsText"
+                    style="font-size:13px; line-height:1.65; color:var(--text); margin:0; white-space:pre-line;">
+                    <span data-i18n="loading">Загрузка…</span>
+                </p>
+            </div>
+
+            <div id="dashCards" style="display:flex;gap:12px;margin-bottom:24px;"></div>
+            <!-- Mood chart -->
+            <div style="margin-bottom:24px;">
+                <div class="dash-section-title" data-i18n="dashboard_mood_14">Настроение за последние 14 дней</div>
+                <div style="background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:16px;">
+                    <div id="dashMoodChart"></div>
+                </div>
+            </div>
+            <!-- Bottom row: sleep + tests -->
+            <div style="display:flex;gap:16px;">
+                <div style="flex:1;">
+                    <div class="dash-section-title" data-i18n="dashboard_sleep_7">Качество сна (7 дней)</div>
+                    <div style="background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:16px;">
+                        <div id="dashSleepChart"></div>
+                    </div>
+                </div>
+                <div style="flex:1;">
+                    <div class="dash-section-title" data-i18n="assessment_dashboard_title">Самооценка (PHQ-9 / GAD-7 / Розенберг)</div>
+                    <div id="dashTests"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- History Modal -->
+    <div class="modal-overlay" id="histModal" onclick="if(event.target===this)closeModal('histModal')">
+        <div class="modal" style="max-width: 840px; padding: 24px 24px 0 36px; overflow: hidden;">
+            <h2 style="display:flex; align-items:center; justify-content:space-between;">
+                <span style="display:flex; align-items:center; gap:8px;">
+                    <i data-lucide="notebook-pen" style="width:18px; color:var(--accent);"></i>
+                    <span data-i18n="history_title">Дневник мыслей</span>
+                </span>
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <button class="suggest-btn entry-btn" onclick="closeModal('histModal'); openThoughtModalSection('thought');"
+                        title="Новая запись" data-i18n-title="new_entry">
+                        <i data-lucide="plus" style="width:14px;"></i> <span data-i18n="new_entry">Новая запись</span>
+                    </button>
+                    <button class="close" onclick="closeModal('histModal')"><i data-lucide="x"
+                            style="width:20px"></i></button>
+                </div>
+            </h2>
+            <div id="histContent" style="margin-top: 24px;"></div>
+        </div>
+    </div>
+
+    <!-- GAD-7 Modal -->
+    <div class="modal-overlay" id="gadModal" onclick="if(event.target===this)closeModal('gadModal')">
+        <div class="modal" style="max-width:580px;">
+            <h2><span data-i18n="gad_modal_title">GAD-7 &mdash; Скрининг тревожности</span> <button class="close"
+                    onclick="closeModal('gadModal')"><i data-lucide="x" style="width:20px"></i></button></h2>
+            <p style="color:var(--gray);font-size:13px;margin-bottom:20px;" data-i18n="gad_modal_desc">За последние две недели, как часто вас
+                беспокоили следующие проблемы?</p>
+            <form id="gadForm" onsubmit="submitGAD(event)">
+                <div id="gadQuestions"></div>
+                <button type="submit" class="btn-primary static-accent" style="margin-top:8px;" data-i18n="get_result">Получить результат</button>
+            </form>
+            <div id="gadResult"
+                style="display:none; margin-top:20px; padding:20px; border-radius:12px; border:1px solid var(--border); background:var(--bg);">
+            </div>
+        </div>
+    </div>
+
+    <!-- Rosenberg Self-Esteem Modal -->
+    <div class="modal-overlay" id="esteemModal" onclick="if(event.target===this)closeModal('esteemModal')">
+        <div class="modal" style="max-width:580px;">
+            <h2><span data-i18n="esteem_modal_title">Самооценка &mdash; шкала Розенберга</span> <button class="close"
+                    onclick="closeModal('esteemModal')"><i data-lucide="x" style="width:20px"></i></button></h2>
+            <p style="color:var(--gray);font-size:13px;margin-bottom:20px;" data-i18n="esteem_modal_desc">Насколько вы согласны со следующими
+                утверждениями о себе?</p>
+            <form id="esteemForm" onsubmit="submitEsteem(event)">
+                <div id="esteemQuestions"></div>
+                <button type="submit" class="btn-primary static-accent" style="margin-top:8px;" data-i18n="get_result">Получить результат</button>
+            </form>
+            <div id="esteemResult"
+                style="display:none; margin-top:20px; padding:20px; border-radius:12px; border:1px solid var(--border); background:var(--bg);">
+            </div>
+        </div>
+    </div>
+    <!-- Sleep Diary History Modal -->
+    <div class="modal-overlay" id="sleepHistModal" onclick="if(event.target===this)closeModal('sleepHistModal')">
+        <div class="modal" style="max-width: 840px; padding: 24px 24px 0 24px; overflow: hidden;">
+            <h2 style="display:flex; align-items:center; justify-content:space-between;">
+                <span style="display:flex; align-items:center; gap:8px;">
+                    <i data-lucide="moon" style="width:18px; color:var(--accent);"></i>
+                    <span data-i18n="sleep_history_title">Журнал сна</span>
+                </span>
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <button class="suggest-btn entry-btn" onclick="closeModal('sleepHistModal'); openModal('sleepModal');"
+                        title="Новая запись" data-i18n-title="new_entry">
+                        <i data-lucide="plus" style="width:14px;"></i> <span data-i18n="new_entry">Новая запись</span>
+                    </button>
+                    <button class="close" onclick="closeModal('sleepHistModal')"><i data-lucide="x"
+                            style="width:20px"></i></button>
+                </div>
+            </h2>
+            <div id="sleepHistContent" style="margin-top: 24px;"></div>
+        </div>
+    </div>
+
+    <!-- Sleep Diary Add Modal -->
+    <div class="modal-overlay" id="sleepModal" onclick="if(event.target===this)closeModal('sleepModal')">
+        <div class="modal" style="max-width:480px;">
+            <h2><span data-i18n="sleep_add_title">Добавить запись о сне</span> <button class="close" onclick="closeModal('sleepModal')"><i
+                        data-lucide="x" style="width:20px"></i></button></h2>
+            <form onsubmit="submitSleep(event)">
+                <div style="display:flex;gap:16px;">
+                    <div class="fg" style="flex:1;"><label data-i18n="sleep_bedtime">Лёг спать</label><input type="time" id="slBed" required
+                            value="23:00"></div>
+                    <div class="fg" style="flex:1;"><label data-i18n="sleep_wake">Встал</label><input type="time" id="slWake" required
+                            value="07:00"></div>
+                </div>
+                <div class="fg"><label data-i18n="sleep_awake_count">Сколько раз просыпался за ночь</label>
+                    <input type="number" id="slAwk" min="0" max="20" value="0" placeholder="0">
+                </div>
+                <div class="fg"><label data-i18n="sleep_quality">Качество сна (0 — ужасно, 10 — отлично)</label>
+                    <input type="range" id="slQual" min="0" max="10" value="6"
+                        style="width:100%; height:4px; border-radius:4px; margin: 10px 0; accent-color: var(--accent);"
+                        oninput="document.getElementById('slQualLabel').innerText = this.value">
+                    <div style="text-align:center;font-size:24px;font-weight:600;color:var(--accent);margin-top:2px;"
+                        id="slQualLabel">6</div>
+                </div>
+                <div class="fg"><label data-i18n="sleep_notes">Заметки (сны, причины плохого сна)</label><textarea id="slNotes" rows="2"
+                        placeholder="Что могло повлиять на сон?" data-i18n-placeholder="sleep_notes_placeholder"></textarea></div>
+                <button type="submit" class="btn-primary static-accent" style="margin-top:10px;" data-i18n="save_entry">Сохранить запись</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- SOS Modal -->
+    <div class="modal-overlay" id="sosModal" onclick="if(event.target===this)closeModal('sosModal')">
+        <div class="modal" style="text-align: center;">
+            <h2><span style="color:var(--text)" data-i18n="sos_title">Экстренная помощь (SOS)</span> <button class="close"
+                    onclick="closeModal('sosModal')"><i data-lucide="x" style="width:20px"></i></button></h2>
+
+            <!-- Tabs -->
+            <script>
+                var sosHints = [
+                    'Паника, учащённое сердцебиение — быстро снижает пульс',
+                    '',
+                    '',
+                    ''
+                ];
+                function switchSos(n) {
+                    var count = 4;
+                    for (var i = 0; i < count; i++) {
+                        var pane = document.getElementById('sosPane' + i);
+                        var tab = document.getElementById('sosTab' + i);
+                        if (pane) pane.style.display = (i === n) ? 'block' : 'none';
+                        if (tab) {
+                            tab.classList.toggle('active', i === n);
+                        }
+                    }
+                    var hint = document.getElementById('sosHint');
+                    if (hint) {
+                        var hintText = sosHints[n] || '';
+                        hint.innerText = hintText;
+                        hint.style.display = hintText ? 'block' : 'none';
+                    }
+                    if (window.stopBreathing) stopBreathing();
+                    if (window.lucide) lucide.createIcons();
+                }
+                function pickBreathe(idx) {
+                    if (window.stopBreathing) stopBreathing();
+                    window._breatheIdx = idx;
+                    var c = document.getElementById('breatheTypes');
+                    if (!c) return;
+                    var btns = c.getElementsByTagName('button');
+                    for (var j = 0; j < btns.length; j++) {
+                        btns[j].classList.toggle('active', j === idx);
+                    }
+                    if (window.setBreatheType) window.setBreatheType(idx);
+                }
+            </script>
+            <div id="sosTabBody">
+                <div style="display:flex; gap:8px; justify-content:center; margin-bottom:16px;">
+                    <button id="sosTab0" class="sos-pill active" onclick="switchSos(0)">
+                        <i data-lucide="wind" style="width:14px;"></i> <span data-i18n="sos_tab_breathing">Дыхание</span></button>
+                    <button id="sosTab1" class="sos-pill" onclick="switchSos(1)">
+                        <i data-lucide="eye" style="width:14px;"></i> <span data-i18n="sos_tab_grounding">Заземление</span></button>
+                    <button id="sosTab2" class="sos-pill" onclick="switchSos(2)">
+                        <i data-lucide="activity" style="width:14px;"></i> <span data-i18n="sos_tab_muscles">Мышцы</span></button>
+                    <button id="sosTab3" class="sos-pill" onclick="switchSos(3)">
+                        <i data-lucide="hand" style="width:14px;"></i> <span data-i18n="sos_tab_stop">СТОП</span></button>
+                </div>
+
+                <!-- Pane 0: Breathing -->
+                <div id="sosPane0">
+                    <div class="sos-pane-card" style="padding: 20px; text-align:left;">
+                        <h3 id="breathePaneTitle" style="margin-bottom: 8px; font-size: 15px; display:flex; align-items:center;">Дыхательные практики</h3>
+                        <p id="breathePaneDesc" style="font-size:12px; color:var(--gray); margin-bottom:12px; line-height:1.5;">Выберите ритм дыхания, который лучше всего подходит вашему состоянию прямо сейчас.</p>
+                        <p id="sosHint"
+                            style="color:var(--gray); font-size:12px; margin:0 0 16px; text-align: left; line-height:1.5;">
+                            Паника, учащённое сердцебиение — быстро снижает пульс</p>
+                        <div id="breatheTypes"
+                            style="display:flex; flex-direction:column; gap:8px; margin-bottom:14px;">
+                            <button class="breathe-option active" onclick="pickBreathe(0)">
+                                <span style="font-size:18px; flex-shrink:0; width:22px; text-align:center;">■</span>
+                                <span>Квадрат 4-4-4-4<br><span style="font-weight:400; font-size:11px;">Снижает пульс,
+                                        останавливает
+                                        панику</span></span>
+                            </button>
+                            <button class="breathe-option" onclick="pickBreathe(1)">
+                                <span style="font-size:18px; flex-shrink:0; width:22px; text-align:center;">☽</span>
+                                <span>4-7-8<br><span style="font-weight:400; font-size:11px;">Снижает
+                                        тревогу, помогает заснуть</span></span>
+                            </button>
+                            <button class="breathe-option" onclick="pickBreathe(2)">
+                                <span style="font-size:18px; flex-shrink:0; width:22px; text-align:center;">❤</span>
+                                <span>Успокаивающее 4-6<br><span style="font-weight:400; font-size:11px;">Включает
+                                        парасимпатическую
+                                        систему</span></span>
+                            </button>
+                        </div>
+                        <button class="btn-primary" id="btnBreathe" onclick="openBreatheScreen()"
+                            style="background:var(--accent); color:#ffffff;" data-i18n="start_exercise">Начать упражнение</button>
+                    </div>
+                </div>
+
+                <!-- Pane 1: Grounding -->
+                <div id="sosPane1" style="display:none;">
+                    <div class="sos-pane-card sos-pane-card--ground"
+                        style="padding: 20px; text-align:left;">
+                        <h3 id="groundPaneTitle" style="margin-bottom: 8px; font-size: 15px; display:flex; align-items:center;">Заземление
+                            5-4-3-2-1</h3>
+                        <p id="groundPaneDesc" style="font-size:12px; color:var(--gray); margin-bottom:16px; line-height:1.5;">Пошаговая
+                            техника — помогает вернуться в «здесь и сейчас» при тревоге или панике.</p>
+                        <div style="display:flex; flex-direction:column; gap:6px; margin-bottom:16px;">
+                            <div
+                                style="display:flex; align-items:center; gap:10px; padding:8px 12px; background:var(--panel); border-radius:10px; border:1px solid var(--border);">
+                                <span
+                                    style="font-size:20px; font-weight:500; color:var(--accent); width:24px; text-align:center;">5</span>
+                                <span id="groundPaneItem0" style="font-size:12px; color:var(--text);">Вещей, которые вы
+                                    видите</span>
+                            </div>
+                            <div
+                                style="display:flex; align-items:center; gap:10px; padding:8px 12px; background:var(--panel); border-radius:10px; border:1px solid var(--border);">
+                                <span
+                                    style="font-size:20px; font-weight:500; color:var(--accent); width:24px; text-align:center;">4</span>
+                                <span id="groundPaneItem1" style="font-size:12px; color:var(--text);">Предмета, которых
+                                    касаетесь</span>
+                            </div>
+                            <div
+                                style="display:flex; align-items:center; gap:10px; padding:8px 12px; background:var(--panel); border-radius:10px; border:1px solid var(--border);">
+                                <span
+                                    style="font-size:20px; font-weight:500; color:var(--accent); width:24px; text-align:center;">3</span>
+                                <span id="groundPaneItem2" style="font-size:12px; color:var(--text);">Звука, которые
+                                    слышите</span>
+                            </div>
+                            <div
+                                style="display:flex; align-items:center; gap:10px; padding:8px 12px; background:var(--panel); border-radius:10px; border:1px solid var(--border);">
+                                <span
+                                    style="font-size:20px; font-weight:500; color:var(--accent); width:24px; text-align:center;">2</span>
+                                <span id="groundPaneItem3" style="font-size:12px; color:var(--text);">Запаха, которые
+                                    чувствуете</span>
+                            </div>
+                            <div
+                                style="display:flex; align-items:center; gap:10px; padding:8px 12px; background:var(--panel); border-radius:10px; border:1px solid var(--border);">
+                                <span
+                                    style="font-size:20px; font-weight:500; color:var(--accent); width:24px; text-align:center;">1</span>
+                                <span id="groundPaneItem4" style="font-size:12px; color:var(--text);">Хорошая вещь о
+                                    себе</span>
+                            </div>
+                        </div>
+                        <button class="btn-primary" onclick="openGroundScreen()"
+                            style="background:var(--accent); color:#fff;" data-i18n="start_exercise">Начать упражнение</button>
+                    </div>
+                </div>
+
+                <!-- Pane 2: PMR -->
+                <div id="sosPane2" style="display:none;">
+                    <div class="sos-pane-card sos-pane-card--pmr"
+                        style="padding: 20px; text-align:left;">
+                        <h3 id="pmrPaneTitle" style="margin-bottom: 8px; font-size: 15px;">Мышечная релаксация</h3>
+                        <p id="pmrPaneDesc" style="font-size:12px; color:var(--gray); margin-bottom:16px; line-height:1.5;">Напрягайте и
+                            расслабляйте группы мышц — снижает физическое напряжение и тревогу.</p>
+                        <div style="display:flex; flex-direction:column; gap:6px; margin-bottom:16px;">
+                            <div
+                                style="display:flex; align-items:center; gap:10px; padding:8px 12px; background:var(--panel); border-radius:10px; border:1px solid var(--border);">
+                                <span style="width:24px; text-align:center; color:var(--accent); flex-shrink:0;"><i
+                                        data-lucide="smile" style="width:16px;"></i></span>
+                                <span id="pmrPaneItem0" style="font-size:12px; color:var(--text);">Лицо — сожмите и расслабьте</span>
+                            </div>
+                            <div
+                                style="display:flex; align-items:center; gap:10px; padding:8px 12px; background:var(--panel); border-radius:10px; border:1px solid var(--border);">
+                                <span style="width:24px; text-align:center; color:var(--accent); flex-shrink:0;"><i
+                                        data-lucide="chevrons-up" style="width:16px;"></i></span>
+                                <span id="pmrPaneItem1" style="font-size:12px; color:var(--text);">Плечи и шея</span>
+                            </div>
+                            <div
+                                style="display:flex; align-items:center; gap:10px; padding:8px 12px; background:var(--panel); border-radius:10px; border:1px solid var(--border);">
+                                <span style="width:24px; text-align:center; color:var(--accent); flex-shrink:0;"><i
+                                        data-lucide="grab" style="width:16px;"></i></span>
+                                <span id="pmrPaneItem2" style="font-size:12px; color:var(--text);">Руки и кисти</span>
+                            </div>
+                            <div
+                                style="display:flex; align-items:center; gap:10px; padding:8px 12px; background:var(--panel); border-radius:10px; border:1px solid var(--border);">
+                                <span style="width:24px; text-align:center; color:var(--accent); flex-shrink:0;"><i
+                                        data-lucide="heart" style="width:16px;"></i></span>
+                                <span id="pmrPaneItem3" style="font-size:12px; color:var(--text);">Живот и грудь</span>
+                            </div>
+                            <div
+                                style="display:flex; align-items:center; gap:10px; padding:8px 12px; background:var(--panel); border-radius:10px; border:1px solid var(--border);">
+                                <span style="width:24px; text-align:center; color:var(--accent); flex-shrink:0;"><i
+                                        data-lucide="footprints" style="width:16px;"></i></span>
+                                <span id="pmrPaneItem4" style="font-size:12px; color:var(--text);">Ноги и стопы</span>
+                            </div>
+                        </div>
+                        <button class="btn-primary" onclick="openPmrScreen()"
+                            style="background:var(--accent); color:#fff;" data-i18n="start_exercise">Начать упражнение</button>
+                    </div>
+                </div>
+
+                <!-- Pane 3: STOP -->
+                <div id="sosPane3" style="display:none;">
+                    <div class="sos-pane-card sos-pane-card--stop"
+                        style="padding: 20px; text-align:left;">
+                        <h3 id="stopPaneTitle" style="margin-bottom: 8px; font-size: 15px;">Техника СТОП</h3>
+                        <p id="stopPaneDesc" style="font-size:12px; color:var(--gray); margin-bottom:16px; line-height:1.5;">Быстрый
+                            4-шаговый алгоритм — останавливает спираль тревожных мыслей.</p>
+                        <div style="display:flex; flex-direction:column; gap:6px; margin-bottom:16px;">
+                            <div
+                                style="display:flex; align-items:center; gap:10px; padding:8px 12px; background:var(--panel); border-radius:10px; border:1px solid var(--border);">
+                                <span id="stopPaneLetter0"
+                                    style="font-size:20px; font-weight:500; color:var(--accent); width:24px; text-align:center;">С</span>
+                                <span id="stopPaneItem0" style="font-size:12px; color:var(--text);">Стоп —
+                                    остановитесь</span>
+                            </div>
+                            <div
+                                style="display:flex; align-items:center; gap:10px; padding:8px 12px; background:var(--panel); border-radius:10px; border:1px solid var(--border);">
+                                <span id="stopPaneLetter1"
+                                    style="font-size:20px; font-weight:500; color:var(--accent); width:24px; text-align:center;">Т</span>
+                                <span id="stopPaneItem1" style="font-size:12px; color:var(--text);">Тело — сделайте
+                                    глубокий вдох</span>
+                            </div>
+                            <div
+                                style="display:flex; align-items:center; gap:10px; padding:8px 12px; background:var(--panel); border-radius:10px; border:1px solid var(--border);">
+                                <span id="stopPaneLetter2"
+                                    style="font-size:20px; font-weight:500; color:var(--accent); width:24px; text-align:center;">О</span>
+                                <span id="stopPaneItem2" style="font-size:12px; color:var(--text);">Осмотрись — наблюдайте
+                                    без оценки</span>
+                            </div>
+                            <div
+                                style="display:flex; align-items:center; gap:10px; padding:8px 12px; background:var(--panel); border-radius:10px; border:1px solid var(--border);">
+                                <span id="stopPaneLetter3"
+                                    style="font-size:20px; font-weight:500; color:var(--accent); width:24px; text-align:center;">П</span>
+                                <span id="stopPaneItem3" style="font-size:12px; color:var(--text);">Продолжай — действуйте
+                                    осознанно</span>
+                            </div>
+                        </div>
+                        <button class="btn-primary" onclick="openStopScreen()"
+                            style="background:var(--accent); color:#fff;" data-i18n="start_exercise">Начать упражнение</button>
+                    </div>
+                </div>
+
+            </div> <!-- /sosTabBody -->
+
+        </div>
+    </div>
+
+    <!-- Notification Settings Modal -->
+    <div class="modal-overlay" id="notifModal" onclick="if(event.target===this)closeModal('notifModal')">
+        <div class="modal" style="max-width:420px;">
+            <h2><span style="display:flex;align-items:center;gap:8px;"><i data-lucide="settings-2"
+                        style="width:18px;color:var(--accent);"></i> <span data-i18n="settings_title">Настройки</span></span>
+                <button class="close" onclick="closeModal('notifModal')"><i data-lucide="x"
+                        style="width:20px"></i></button>
+            </h2>
+            <div class="settings-section">
+                <div class="settings-section-label" data-i18n="language_title">Язык</div>
+                <div class="settings-lang-row">
+                    <button type="button" class="settings-lang-btn" id="settingsLangRu" onclick="setLanguage('ru')">
+                        <span class="settings-lang-emoji" aria-hidden="true">🇷🇺</span>
+                        <span data-i18n="language_ru">Русский</span>
+                    </button>
+                    <button type="button" class="settings-lang-btn" id="settingsLangEn" onclick="setLanguage('en')">
+                        <span class="settings-lang-emoji" aria-hidden="true">🇬🇧</span>
+                        <span data-i18n="language_en">English</span>
+                    </button>
+                </div>
+            </div>
+            <div class="settings-section">
+                <div class="settings-section-label" data-i18n="tts_settings_title">Microsoft TTS</div>
+                <div class="settings-voice-grid">
+                    <div class="settings-field">
+                        <label class="settings-field-label" for="ttsVoiceRu" data-i18n="tts_voice_ru_label">Русский голос</label>
+                        <div class="settings-field-row">
+                            <select id="ttsVoiceRu" class="settings-select"></select>
+                            <button type="button" class="settings-preview-btn" onclick="previewTtsVoice('ru')" data-i18n="tts_preview">Прослушать</button>
+                        </div>
+                    </div>
+                    <div class="settings-field">
+                        <label class="settings-field-label" for="ttsVoiceEn" data-i18n="tts_voice_en_label">English voice</label>
+                        <div class="settings-field-row">
+                            <select id="ttsVoiceEn" class="settings-select"></select>
+                            <button type="button" class="settings-preview-btn" onclick="previewTtsVoice('en')" data-i18n="tts_preview">Прослушать</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="settings-section">
+                <div class="settings-section-label" data-i18n="reminders_title">Напоминания</div>
+                <p style="font-size:13px; color:var(--gray); margin:10px 0 20px; line-height:1.5;" data-i18n="reminders_desc">Браузерные уведомления —
+                    напомнят записать настроение или практику. Страница должна быть открыта в браузере.</p>
+                <div style="display:flex; flex-direction:column; gap:16px;">
+                    <div
+                        style="display:flex; align-items:center; gap:12px; padding:14px; background:var(--bg); border:1px solid var(--border); border-radius:10px;">
+                        <label style="display:flex;align-items:center;gap:8px;flex:1;cursor:pointer;">
+                            <input type="checkbox" id="notifMorning"
+                                style="accent-color:var(--accent); width:16px; height:16px;">
+                            <span style="font-size:14px;display:flex;align-items:center;gap:6px;"><i data-lucide="sunrise"
+                                    style="width:15px;color:var(--gray);"></i> <span data-i18n="reminders_morning">Утреннее</span></span>
+                        </label>
+                        <input type="time" id="notifMorningTime" value="09:00"
+                            style="padding:6px 10px; border:1px solid var(--border); border-radius:8px; font-size:13px; background:var(--panel); color:var(--text); outline:none;">
+                    </div>
+                    <div
+                        style="display:flex; align-items:center; gap:12px; padding:14px; background:var(--bg); border:1px solid var(--border); border-radius:10px;">
+                        <label style="display:flex;align-items:center;gap:8px;flex:1;cursor:pointer;">
+                            <input type="checkbox" id="notifEvening"
+                                style="accent-color:var(--accent); width:16px; height:16px;">
+                            <span style="font-size:14px;display:flex;align-items:center;gap:6px;"><i data-lucide="moon"
+                                    style="width:15px;color:var(--gray);"></i> <span data-i18n="reminders_evening">Вечернее</span></span>
+                        </label>
+                        <input type="time" id="notifEveningTime" value="21:00"
+                            style="padding:6px 10px; border:1px solid var(--border); border-radius:8px; font-size:13px; background:var(--panel); color:var(--text); outline:none;">
+                    </div>
+                </div>
+            </div>
+            <button class="btn-primary static-accent" onclick="saveNotifSettings()" style="margin-top:20px;" data-i18n="save">Сохранить</button>
+        </div>
+    </div>
+
+    <script src="js/api.js?v=2"></script>
+
+    <!-- Article Library Modal -->
+    <div class="modal-overlay" id="articleModal" onclick="if(event.target===this)closeArticleLibraryModal()">
+        <div class="modal article-modal">
+            <h2 class="library-modal-head">
+                <span class="library-modal-title">
+                    <i data-lucide="book-open" style="width:18px; color:var(--text);"></i>
+                    <span data-i18n="article_library_title">Библиотека статей</span>
+                </span>
+                <button class="close" onclick="closeArticleLibraryModal()"><i data-lucide="x"
+                        style="width:20px"></i></button>
+            </h2>
+
+            <div id="articleListContainer">
+                <p class="library-modal-subtitle" data-i18n="article_library_subtitle">Подборка статей о депрессии, КПТ и доказательных подходах к
+                    самопомощи.</p>
+                <div id="articleListGrid" class="library-list-grid"></div>
+            </div>
+
+            <div id="articleReaderContainer" style="display:none;">
+                <button onclick="closeArticleReader()" class="library-back-btn"><i data-lucide="arrow-left"
+                        style="width:16px;"></i> <span data-i18n="back_to_list">Назад к списку</span></button>
+                <div class="article-reader">
+                    <div class="article-reader-meta">
+                        <div id="articleReaderKicker" class="article-reader-kicker"></div>
+                        <div id="articleReaderSources" class="article-reader-sources"></div>
+                    </div>
+                    <h3 id="articleReaderTitle" class="article-reader-title"></h3>
+                    <div id="articleReaderBody" class="article-reader-body"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Video Library Modal -->
+    <div class="modal-overlay" id="videoModal" onclick="if(event.target===this)closeVideoLibraryModal()">
+        <div class="modal" style="max-width:600px; padding: 24px;">
+            <h2
+                style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); padding-bottom:16px; margin-bottom:16px;">
+                <span style="display:flex; align-items:center; gap:8px;">
+                    <i data-lucide="play-circle" style="width:18px; color:var(--text);"></i>
+                    <span data-i18n="video_library_title">Видео-библиотека</span>
+                </span>
+                <button class="close" onclick="closeVideoLibraryModal()"
+                    style="background:none; border:none; cursor:pointer; color:var(--gray)"><i data-lucide="x"
+                        style="width:20px"></i></button>
+            </h2>
+            <div id="videoListContainer">
+                <p style="font-size:13px; color:var(--gray); margin-bottom: 20px; line-height:1.5;" data-i18n="video_library_subtitle">Отобранные материалы
+                    от специалистов: механизмы депрессии, тревоги и полезные практики.</p>
+                <div id="videoListGrid"
+                    style="display:grid; grid-template-columns:1fr; gap:16px; max-height: 60vh; overflow-y:auto; padding-right:10px;">
+                    <!-- Javascript will render videos here -->
+                </div>
+            </div>
+
+            <div id="videoPlayerContainer" style="display:none; width:100%;">
+                <button onclick="closeVideoPlayer()"
+                    style="background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:8px 12px; color:var(--text); cursor:pointer; font-size:13px; font-weight:500; margin-bottom:16px; display:inline-flex; align-items:center; gap:6px;"><i
+                        data-lucide="arrow-left" style="width:16px;"></i> <span data-i18n="back_to_list">Назад к списку</span></button>
+                <div
+                    style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius:12px; background:#000;">
+                    <iframe id="videoIframe" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"
+                        src="" title="YouTube video player" frameborder="0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowfullscreen></iframe>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Download Format Modal -->
+    <div class="modal-overlay" id="downloadModal" onclick="if(event.target===this)closeModal('downloadModal')">
+        <div class="modal" style="max-width:420px; padding:28px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;">
+                <h2 style="margin:0;display:flex;align-items:center;gap:8px;">
+                    <i data-lucide="download" style="width:20px;color:var(--accent)"></i> <span data-i18n="download_title">Скачать выписку</span>
+                </h2>
+                <button class="close" onclick="closeModal('downloadModal')"><i data-lucide="x"
+                        style="width:20px"></i></button>
+            </div>
+            <p style="color:var(--gray);font-size:13px;margin:0 0 20px;" data-i18n="download_desc">Выберите формат экспорта данных</p>
+            <div style="display:flex;gap:12px;">
+                <button onclick="downloadAsPDF()"
+                    style="flex:1;border:1.5px solid var(--accent);background:var(--accent-light);border-radius:12px;padding:20px 12px;cursor:pointer;text-align:center;transition:all 0.2s;"
+                    onmouseover="this.style.background='var(--accent)';this.style.color='#fff'"
+                    onmouseout="this.style.background='var(--accent-light)';this.style.color=''">
+                    <i data-lucide="file-text"
+                        style="width:28px;display:block;margin:0 auto 8px;color:var(--accent)"></i>
+                    <div style="font-weight:600;font-size:14px;margin-bottom:4px;">PDF</div>
+                    <div style="font-size:11px;color:var(--gray);" data-i18n-html="download_pdf_desc">Красивый отчёт<br>с графиками</div>
+                </button>
+                <button onclick="downloadAsTXT()"
+                    style="flex:1;border:1.5px solid var(--border);background:var(--panel);border-radius:12px;padding:20px 12px;cursor:pointer;text-align:center;transition:all 0.2s;"
+                    onmouseover="this.style.borderColor='var(--gray)'"
+                    onmouseout="this.style.borderColor='var(--border)'">
+                    <i data-lucide="file" style="width:28px;display:block;margin:0 auto 8px;color:var(--gray)"></i>
+                    <div style="font-weight:600;font-size:14px;margin-bottom:4px;">TXT</div>
+                    <div style="font-size:11px;color:var(--gray);" data-i18n-html="download_txt_desc">Текстовый файл<br>со всеми данными</div>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/ui.js?v=15"></script>
+    <script src="js/report.js?v=2"></script>
+    <script src="js/chat_manager.js?v=4"></script>
+    <script src="js/cbt_tools.js?v=11"></script>
+    <script src="js/main.js?v=4"></script>
+
+    <!-- Fullscreen PMR Overlay -->
+    <div id="pmrOverlay" class="pmr-overlay" style="display:none;">
+        <button onclick="closePmrScreen()"
+            style="position:absolute; top:24px; right:24px; background:none; border:none; color:rgba(255,255,255,0.6); cursor:pointer; font-size:28px; z-index:10; line-height:1;">×</button>
+        <div class="pmr-scene">
+            <div class="pmr-step-num" id="pmrStepNum">1</div>
+            <div class="pmr-muscle" id="pmrMuscle">Лицо</div>
+            <div class="pmr-phase" id="pmrPhase">Напрягите</div>
+            <div class="pmr-instruction" id="pmrInstruction">Сожмите лицо: зажмурьтесь, нахмурьтесь, сожмите челюсть
+            </div>
+            <div class="pmr-timer" id="pmrTimer">5</div>
+            <div class="pmr-progress">
+                <div class="pmr-dot active"></div>
+                <div class="pmr-dot"></div>
+                <div class="pmr-dot"></div>
+                <div class="pmr-dot"></div>
+                <div class="pmr-dot"></div>
+            </div>
+            <button class="pmr-next-btn" id="pmrNextBtn" onclick="pmrNext()" data-i18n="skip_arrow">Пропустить →</button>
+        </div>
+    </div>
+
+    <!-- Fullscreen STOP Overlay -->
+    <div id="stopOverlay" class="stop-overlay" style="display:none;">
+        <button onclick="closeStopScreen()" class="sos-fullscreen-close">×</button>
+        <div class="stop-scene">
+            <div class="stop-letter" id="stopLetter">S</div>
+            <div class="stop-word" id="stopWord">Стоп</div>
+            <div class="stop-instruction" id="stopInstruction">Скажите себе «Стоп». Мысленно или вслух. Остановите поток
+                мыслей.</div>
+            <div class="stop-progress">
+                <div class="stop-dot active"></div>
+                <div class="stop-dot"></div>
+                <div class="stop-dot"></div>
+                <div class="stop-dot"></div>
+            </div>
+            <button class="stop-next-btn" id="stopNextBtn" onclick="stopNext()" data-i18n="done_arrow">Готово →</button>
+        </div>
+    </div>
+
+    <!-- Fullscreen Grounding Overlay -->
+    <div id="groundOverlay" class="ground-overlay" style="display:none;">
+        <button onclick="closeGroundScreen()" class="sos-fullscreen-close">×</button>
+        <div class="ground-scene">
+            <div class="ground-number" id="groundNumber">5</div>
+            <div class="ground-sense" id="groundSense">Зрение</div>
+            <div class="ground-instruction" id="groundInstruction">Назовите 5 вещей, которые вы видите</div>
+            <div class="ground-progress" id="groundProgress">
+                <div class="ground-dot active"></div>
+                <div class="ground-dot"></div>
+                <div class="ground-dot"></div>
+                <div class="ground-dot"></div>
+                <div class="ground-dot"></div>
+            </div>
+            <button class="ground-next-btn" id="groundNextBtn" onclick="groundNext()" data-i18n="done_arrow">Готово →</button>
+        </div>
+    </div>
+
+    <!-- Fullscreen Breathing Overlay (Premium Petal) -->
+    <div id="breatheOverlay" class="breathe-overlay" style="display:none;">
+        <!-- Ambient background -->
+        <div class="breathe-bg-glow"></div>
+        <!-- Floating particles -->
+        <div class="breathe-particles" id="breatheParticles"></div>
+        <!-- Close button -->
+        <button onclick="closeBreatheScreen()" class="breathe-close-btn" aria-label="Close">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+        </button>
+        <div class="breathe-scene">
+            <!-- Portal ring container -->
+            <div class="breathe-portal" id="breatheFlower">
+                <div class="breathe-portal-ring"></div>
+            </div>
+            <!-- Text overlay on top of flower -->
+            <div class="breathe-text-overlay" id="breatheTextOverlay">
+                <span id="breathePhase" class="breathe-phase-text" data-i18n="breathe_phase">Дыхание</span>
+                <span id="breatheTimer" class="breathe-timer-text"></span>
+            </div>
+            <!-- Info below -->
+            <div class="breathe-info">
+                <span id="breatheCycleCount" class="breathe-cycle" data-i18n="cycle_one">Цикл 1</span>
+                <p id="breatheHint" class="breathe-hint" data-i18n="follow_circle">Следуйте за кругом</p>
+                <p id="breatheTip" class="breathe-tip"></p>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>
