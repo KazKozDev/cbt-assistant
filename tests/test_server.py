@@ -105,6 +105,38 @@ def test_thought_record_endpoint(override_db):
     assert len(trs) == 1
     assert trs[0]["situation"] == "Testing API"
 
+def test_update_thought_record_endpoint(override_db):
+    session_id = "test_thought_update_endpoint"
+    thought_id = override_db.add_thought_record(
+        session_id,
+        "Before",
+        "Old thought",
+        "Anxiety",
+        6,
+        "Fortune Telling",
+        "It's just code",
+    )
+
+    tr_payload = {
+        "session_id": session_id,
+        "situation": "After",
+        "thought": "New thought",
+        "emotion": "Calm",
+        "intensity": 3,
+        "distortion": "Не знаю",
+        "rational_response": "Updated response",
+    }
+    response = client.put(f"/api/thoughts/{thought_id}", json=tr_payload)
+    assert response.status_code == 200
+    assert response.json()["status"] == "ok"
+
+    session_data = client.get(f"/api/session/{session_id}").json()
+    trs = session_data["thought_records"]
+    assert len(trs) == 1
+    assert trs[0]["id"] == thought_id
+    assert trs[0]["situation"] == "After"
+    assert trs[0]["thought"] == "New thought"
+
 @patch("backend.server.llm_client.chat", new_callable=AsyncMock)
 def test_chat_endpoint(mock_chat, override_db):
     session_id = "test_chat_endpoint"

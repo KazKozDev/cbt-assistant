@@ -1,10 +1,16 @@
+<p align="center">
+  <img src="docs/img/rounded-logo.png" alt="CBT Assistant logo" width="160">
+</p>
+
 # CBT Assistant
 
 A local CBT-style AI assistant with a web UI, Ollama, RAG-based knowledge search, conversational memory, journals, assessments, and SOS practices.
 
-Current release: `1.0.0`
+Current release: `1.0.1`
 
 The project is designed for local use: the backend runs on FastAPI, the frontend is served as a static web app, and both model responses and embeddings are handled through a local Ollama server.
+
+![CBT Assistant screenshot](docs/img/screenshot.png)
 
 ## What This Is
 
@@ -33,7 +39,19 @@ This is not a medical device and not a replacement for a doctor or therapist. It
 
 ## How It Works
 
-### Architecture
+### Request Flow
+
+```
+Browser (frontend)
+    â
+    â¼
+FastAPI backend (backend/server.py)
+    âââ loads system prompt from config/prompts.yaml
+    âââ fetches session history + summary from SQLite
+    âââ runs tool calls (knowledge search, activity lookup, etc.)
+    â       âââ RAG: embeds query â searches knowledge_base/ via Ollama embeddings
+    âââ sends full context to Ollama LLM â streams reply back to browser
+```
 
 1. The user opens the frontend at `http://localhost:8000`.
 2. The FastAPI backend serves the API, websocket chat, TTS, and static files.
@@ -49,12 +67,12 @@ This is not a medical device and not a replacement for a doctor or therapist. It
 
 ### Main Components
 
-- [backend/server.py](/Users/artemk/projects/cbt-assistant/backend/server.py) - FastAPI server and API logic.
-- [src/llm/ollama_client.py](/Users/artemk/projects/cbt-assistant/src/llm/ollama_client.py) - client for `Ollama /api/chat`.
-- [src/rag/knowledge_base.py](/Users/artemk/projects/cbt-assistant/src/rag/knowledge_base.py) - knowledge base loading and semantic search.
-- [src/utils/db.py](/Users/artemk/projects/cbt-assistant/src/utils/db.py) - SQLite storage for sessions, journals, and synced data.
-- [src/memory/summarizer.py](/Users/artemk/projects/cbt-assistant/src/memory/summarizer.py) - short-term memory / conversation summary logic.
-- [frontend/index.html](/Users/artemk/projects/cbt-assistant/frontend/index.html) - main UI.
+- [backend/server.py](backend/server.py) - FastAPI server and API logic.
+- [src/llm/ollama_client.py](src/llm/ollama_client.py) - client for `Ollama /api/chat`.
+- [src/rag/knowledge_base.py](src/rag/knowledge_base.py) - knowledge base loading and semantic search.
+- [src/utils/db.py](src/utils/db.py) - SQLite storage for sessions, journals, and synced data.
+- [src/memory/summarizer.py](src/memory/summarizer.py) - short-term memory / conversation summary logic.
+- [frontend/index.html](frontend/index.html) - main UI.
 
 ## Technology Stack
 
@@ -73,14 +91,16 @@ This is not a medical device and not a replacement for a doctor or therapist. It
 ### Requirements
 
 - Python 3.10+
-- [Ollama](https://ollama.com/) installed
-- an Ollama server available at `http://localhost:11434`
+- [Ollama](https://ollama.com/) installed and running
+- Ollama server available at `http://localhost:11434`
+
+> **Windows / Linux:** the macOS `.command` launcher is not available, but the manual steps below work on all platforms.
 
 ### Installation
 
 ```bash
 python -m venv .venv
-source .venv/bin/activate
+source .venv/bin/activate        # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
@@ -103,7 +123,7 @@ ollama serve
 In another:
 
 ```bash
-source .venv/bin/activate
+source .venv/bin/activate        # Windows: .venv\Scripts\activate
 python backend/server.py
 ```
 
@@ -115,7 +135,7 @@ http://localhost:8000
 
 ### Quick Launch on macOS
 
-The repo includes a helper script, [start_cbt_assistant.command](/Users/artemk/projects/cbt-assistant/start_cbt_assistant.command), which:
+The repo includes a helper script, [start_cbt_assistant.command](start_cbt_assistant.command), which:
 
 - checks that `.venv/bin/python` exists;
 - starts the backend in Terminal;
@@ -131,13 +151,13 @@ OLLAMA_BASE_URL=http://localhost:11434
 OLLAMA_MODEL=qwen3:8b
 ```
 
-Model parameters live in [config/model_config.yaml](/Users/artemk/projects/cbt-assistant/config/model_config.yaml), and system prompts live in [config/prompts.yaml](/Users/artemk/projects/cbt-assistant/config/prompts.yaml).
+Model parameters live in [config/model_config.yaml](config/model_config.yaml), and system prompts live in [config/prompts.yaml](config/prompts.yaml).
 
 ## Data Storage
 
 ### Backend
 
-- SQLite database: [data/cbt_sessions.db](/Users/artemk/projects/cbt-assistant/data/cbt_sessions.db)
+- SQLite database: `data/cbt_sessions.db`
 - It stores:
   - sessions;
   - message history;
@@ -150,16 +170,18 @@ Model parameters live in [config/model_config.yaml](/Users/artemk/projects/cbt-a
 
 ### Browser
 
-Some settings and client-side data are stored in `localStorage`, including:
+Some settings and client-side data are stored in `localStorage`:
 
-- `sleepLog`
-- `activities`
-- `phqHistory`
-- `gadHistory`
-- `esteemHistory`
-- `notifSettings`
-- `ttsSettings`
-- `APP_LANG`
+| Key | What it holds |
+|-----|---------------|
+| `sleepLog` | Sleep journal entries (bedtime, wake time, quality) |
+| `activities` | User-defined behavioral activation activities |
+| `phqHistory` | PHQ-9 depression assessment history |
+| `gadHistory` | GAD-7 anxiety assessment history |
+| `esteemHistory` | Rosenberg Self-Esteem Scale history |
+| `notifSettings` | Notification preferences |
+| `ttsSettings` | Text-to-speech voice and speed settings |
+| `APP_LANG` | Selected interface language (`ru` or `en`) |
 
 Local runtime data in `data/` is intentionally gitignored so personal session data does not get committed to the repository.
 
@@ -211,7 +233,9 @@ src/
   utils/                   SQLite and helpers
 knowledge_base/            CBT materials for RAG
 config/                    model and prompt config
-data/                      SQLite database
+data/                      SQLite database (gitignored)
+docs/
+  img/                     screenshots and assets
 tests/                     pytest suite
 ```
 
@@ -232,21 +256,40 @@ The project includes tests for:
 - memory logic;
 - parts of end-to-end user flows.
 
+## Troubleshooting
+
+**Startup is slow or hangs**
+On first run, embeddings are generated for all files in `knowledge_base/`. This can take a minute or two depending on hardware. Subsequent starts are fast.
+
+**`qwen3-embedding:4b` not found**
+The backend will attempt to pull it automatically via Ollama, but it is better to pull it manually before starting:
+```bash
+ollama pull qwen3-embedding:4b
+```
+
+**Port 8000 already in use**
+Another process is occupying the port. Either stop it or change the port in `backend/server.py`.
+
+**Ollama connection refused**
+Make sure `ollama serve` is running before starting the backend. Check that `OLLAMA_BASE_URL` points to the correct address.
+
+**Voice input not working**
+Voice input uses the browser's Web Speech API, which is only available in Chromium-based browsers (Chrome, Edge) and Safari. It does not work in Firefox.
+
+**TTS not working**
+Requires the `edge-tts` package (included in `requirements.txt`) and a working internet connection for the first request. Check that the backend is running and reachable.
+
 ## Practical Notes
 
-- On first startup, embeddings are generated from the files in `knowledge_base/`, so startup may take some time.
-- If `qwen3-embedding:4b` is not installed, the backend attempts to pull it through Ollama, but it is better to install it ahead of time.
-- Voice input depends on browser support for the Web Speech API.
-- TTS requires a working backend and the `edge-tts` package.
 - Some state lives in the browser and some in SQLite, so synchronization is not fully automatic in every scenario.
+- A production deployment would require additional work around security, authentication, privacy controls, and deployment hardening.
 
 ## Limitations and Safety
 
 - The application is not intended for emergency psychiatric support.
 - The assistant can be wrong, hallucinate, or produce incomplete recommendations.
 - Assessment results and assistant responses must not be treated as a medical diagnosis.
-- A production deployment would require additional work around security, authentication, privacy controls, and deployment hardening.
 
 ## License
 
-This project is released under the MIT License. See [LICENSE](/Users/artemk/projects/cbt-assistant/LICENSE).
+This project is released under the MIT License. See [LICENSE](LICENSE).

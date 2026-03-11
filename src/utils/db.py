@@ -155,7 +155,7 @@ class SQLiteSessionManager:
             mood_log = [dict(row) for row in cursor.fetchall()]
 
             cursor.execute(
-                "SELECT situation, thought, emotion, intensity, distortion, rational_response, timestamp FROM thought_records WHERE session_id = ? ORDER BY timestamp ASC",
+                "SELECT id, situation, thought, emotion, intensity, distortion, rational_response, timestamp FROM thought_records WHERE session_id = ? ORDER BY timestamp ASC",
                 (session_id,),
             )
             thought_records = [dict(row) for row in cursor.fetchall()]
@@ -240,6 +240,40 @@ class SQLiteSessionManager:
                 ),
             )
             conn.commit()
+            return cursor.lastrowid
+
+    def update_thought_record(
+        self,
+        thought_id: int,
+        session_id: str,
+        situation: str,
+        thought: str,
+        emotion: str,
+        intensity: int,
+        distortion: str,
+        rational_response: str,
+    ) -> bool:
+        with self._get_conn() as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                """
+                UPDATE thought_records
+                SET situation = ?, thought = ?, emotion = ?, intensity = ?, distortion = ?, rational_response = ?
+                WHERE id = ? AND session_id = ?
+                """,
+                (
+                    situation,
+                    thought,
+                    emotion,
+                    intensity,
+                    distortion,
+                    rational_response,
+                    thought_id,
+                    session_id,
+                ),
+            )
+            conn.commit()
+            return cursor.rowcount > 0
 
     def sync_sleep_logs(self, session_id: str, logs: list[dict]):
         with self._get_conn() as conn:

@@ -8,7 +8,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link rel="stylesheet" href="css/style.css?v=22">
+    <link rel="stylesheet" href="css/style.css?v=23">
 </head>
 
 <body>
@@ -412,7 +412,7 @@
                     <span data-i18n="sleep_history_title">Журнал сна</span>
                 </span>
                 <div style="display:flex; align-items:center; gap:8px;">
-                    <button class="suggest-btn entry-btn" onclick="closeModal('sleepHistModal'); openModal('sleepModal');"
+                    <button class="suggest-btn entry-btn" onclick="closeModal('sleepHistModal'); openSleepEntryModal();"
                         title="Новая запись" data-i18n-title="new_entry">
                         <i data-lucide="plus" style="width:14px;"></i> <span data-i18n="new_entry">Новая запись</span>
                     </button>
@@ -427,7 +427,7 @@
     <!-- Sleep Diary Add Modal -->
     <div class="modal-overlay" id="sleepModal" onclick="if(event.target===this)closeModal('sleepModal')">
         <div class="modal" style="max-width:480px;">
-            <h2><span data-i18n="sleep_add_title">Добавить запись о сне</span> <button class="close" onclick="closeModal('sleepModal')"><i
+            <h2><span id="sleepModalTitle" data-i18n="sleep_add_title">Добавить запись о сне</span> <button class="close" onclick="closeModal('sleepModal')"><i
                         data-lucide="x" style="width:20px"></i></button></h2>
             <form onsubmit="submitSleep(event)">
                 <div style="display:flex;gap:16px;">
@@ -448,7 +448,7 @@
                 </div>
                 <div class="fg"><label data-i18n="sleep_notes">Заметки (сны, причины плохого сна)</label><textarea id="slNotes" rows="2"
                         placeholder="Что могло повлиять на сон?" data-i18n-placeholder="sleep_notes_placeholder"></textarea></div>
-                <button type="submit" class="btn-primary static-accent" style="margin-top:10px;" data-i18n="save_entry">Сохранить запись</button>
+                <button type="submit" class="btn-primary static-accent" id="sleepSubmitBtn" style="margin-top:10px;" data-i18n="save_entry">Сохранить запись</button>
             </form>
         </div>
     </div>
@@ -862,10 +862,10 @@
         </div>
     </div>
 
-    <script src="js/ui.js?v=15"></script>
+    <script src="js/ui.js?v=16"></script>
     <script src="js/report.js?v=2"></script>
     <script src="js/chat_manager.js?v=4"></script>
-    <script src="js/cbt_tools.js?v=11"></script>
+    <script src="js/cbt_tools.js?v=13"></script>
     <script src="js/main.js?v=4"></script>
 
     <!-- Fullscreen PMR Overlay -->

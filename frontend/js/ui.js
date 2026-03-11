@@ -589,6 +589,8 @@ function openModal(id) {
 function closeModal(id) {
     document.getElementById(id).style.display = 'none';
     if (id === 'sosModal') stopBreathing();
+    if (id === 'thoughtModal' && typeof window.resetThoughtEditor === 'function') window.resetThoughtEditor();
+    if (id === 'sleepModal' && typeof window.resetSleepEditor === 'function') window.resetSleepEditor();
 }
 
 let rec = null, isRec = false;

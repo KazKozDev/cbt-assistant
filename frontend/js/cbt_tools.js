@@ -12,6 +12,7 @@ const CBT_I18N = {
         thoughtSave: 'Сохранить мысль',
         gratitudeSave: 'Сохранить благодарность',
         entrySave: 'Сохранить запись',
+        save_entry: 'Сохранить запись',
         saving: 'Сохраняем...',
         gratitudeEmotion: 'благодарность',
         gratitudeSaved: '🙏 Запись благодарности сохранена. Это отличная практика!',
@@ -37,20 +38,31 @@ const CBT_I18N = {
         testOpenMsg: '📋 Я открыл(а) для вас опросник {test}. Прохождение займет пару минут.',
         noSleepEntries: 'Пока нет записей о сне',
         noSleepEntriesSub: 'Отслеживайте сон, чтобы понять как он влияет на ваше настроение и самочувствие',
+        sleep_add_title: 'Добавить запись о сне',
         duration: 'Длительность',
         quality: 'Качество',
         sleepSchedule: 'График сна',
         awakenings: 'Пробуждения за ночь',
         timesCount: '{count} раз',
         notes: 'Заметки',
+        sleepEntrySaved: 'Запись о сне сохранена.',
         slotMorning: 'Старт дня',
         slotBody: 'Для тела',
         slotJoy: 'Для души',
         earlier: 'Ранее',
         moodAfter: 'Настроение',
+        edit: 'Редактировать',
         delete: 'Удалить',
         forExample: 'Например: ',
         save: 'Сохранить',
+        saveChanges: 'Сохранить изменения',
+        entryUpdated: 'Запись обновлена.',
+        sleepEntryUpdated: 'Запись о сне обновлена.',
+        activityUpdated: 'Активность обновлена.',
+        editThoughtTitle: 'Редактировать запись',
+        editGratitudeTitle: 'Редактировать благодарность',
+        editSleepTitle: 'Редактировать запись о сне',
+        editActivityPrompt: 'Измените текст активности',
         extra: 'Дополнительно',
         customStepPlaceholder: 'Ваш дополнительный шаг...',
         addCustomStep: 'Добавить свой шаг',
@@ -111,6 +123,7 @@ const CBT_I18N = {
         thoughtSave: 'Save thought',
         gratitudeSave: 'Save gratitude',
         entrySave: 'Save entry',
+        save_entry: 'Save entry',
         saving: 'Saving...',
         gratitudeEmotion: 'gratitude',
         gratitudeSaved: '🙏 Your gratitude entry was saved. This is a strong practice.',
@@ -136,20 +149,31 @@ const CBT_I18N = {
         testOpenMsg: '📋 I opened the {test} questionnaire for you. It only takes a couple of minutes.',
         noSleepEntries: 'No sleep entries yet',
         noSleepEntriesSub: 'Track your sleep to see how it affects your mood and wellbeing',
+        sleep_add_title: 'Add a sleep entry',
         duration: 'Duration',
         quality: 'Quality',
         sleepSchedule: 'Sleep schedule',
         awakenings: 'Night awakenings',
         timesCount: '{count} times',
         notes: 'Notes',
+        sleepEntrySaved: 'Sleep entry saved.',
         slotMorning: 'Start of day',
         slotBody: 'For the body',
         slotJoy: 'For the soul',
         earlier: 'Earlier',
         moodAfter: 'Mood',
+        edit: 'Edit',
         delete: 'Delete',
         forExample: 'For example: ',
         save: 'Save',
+        saveChanges: 'Save changes',
+        entryUpdated: 'Entry updated.',
+        sleepEntryUpdated: 'Sleep entry updated.',
+        activityUpdated: 'Activity updated.',
+        editThoughtTitle: 'Edit entry',
+        editGratitudeTitle: 'Edit gratitude',
+        editSleepTitle: 'Edit sleep entry',
+        editActivityPrompt: 'Edit activity text',
         extra: 'Extra',
         customStepPlaceholder: 'Your extra step...',
         addCustomStep: 'Add your own step',
@@ -277,6 +301,60 @@ async function logMoodFromWelcome(score) {
 window.logMoodFromWelcome = logMoodFromWelcome;
 
 let _thoughtType = 'thought'; // 'thought' | 'gratitude' | 'rhythm'
+let _editingThoughtId = null;
+let _editingSleepId = null;
+
+function makeLocalEntryId(prefix) {
+    return prefix + '_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+}
+
+function normalizeLocalEntries(entries, prefix) {
+    var changed = false;
+    var normalized = (entries || []).map(function (entry, idx) {
+        if (!entry || typeof entry !== 'object') return entry;
+        if (entry.id) return entry;
+        changed = true;
+        return Object.assign(
+            {
+                id: prefix + '_' + idx + '_' + String(entry.isoDate || entry.date || Date.now()).replace(/[^a-zA-Z0-9]/g, '')
+            },
+            entry
+        );
+    });
+    return { entries: normalized, changed: changed };
+}
+
+function updateThoughtFormMode() {
+    var title = document.getElementById('thoughtModalTitle');
+    var submit = document.getElementById('tSub');
+    if (title) {
+        if (_editingThoughtId !== null) {
+            title.innerText = _thoughtType === 'gratitude' ? cbtText('editGratitudeTitle') : cbtText('editThoughtTitle');
+        } else {
+            title.innerText = cbtText('thoughtModalTitle');
+        }
+    }
+    if (submit) {
+        submit.innerText = _editingThoughtId !== null
+            ? cbtText('saveChanges')
+            : _thoughtType === 'gratitude'
+                ? cbtText('gratitudeSave')
+                : cbtText('thoughtSave');
+    }
+}
+
+function resetThoughtEditor() {
+    _editingThoughtId = null;
+    var form = document.getElementById('tForm');
+    if (form) form.reset();
+    var gratitude = document.getElementById('gratText');
+    if (gratitude) gratitude.value = '';
+    var intensity = document.getElementById('tInt');
+    if (intensity) intensity.value = '5';
+    switchThoughtType('thought');
+    updateThoughtFormMode();
+}
+window.resetThoughtEditor = resetThoughtEditor;
 
 function cleanupLegacyRhythmIntro() {
     var rhythmSection = document.getElementById('rhythmSection');
@@ -310,9 +388,7 @@ function switchThoughtType(type) {
                 : '';
         hint.style.display = hint.innerText ? 'block' : 'none';
     }
-    if (submit) {
-        submit.innerText = type === 'gratitude' ? cbtText('gratitudeSave') : cbtText('thoughtSave');
-    }
+    if (submit) updateThoughtFormMode();
     document.getElementById('thoughtFormFull').style.display = type === 'thought' ? 'block' : 'none';
     document.getElementById('gratitudeFormSection').style.display = type === 'gratitude' ? 'block' : 'none';
     document.getElementById('tForm').style.display = type === 'rhythm' ? 'none' : 'block';
@@ -325,6 +401,7 @@ function switchThoughtType(type) {
 window.switchThoughtType = switchThoughtType;
 
 function openThoughtModalSection(type) {
+    resetThoughtEditor();
     openModal('thoughtModal');
     switchThoughtType(type || 'thought');
 }
@@ -333,6 +410,7 @@ window.openThoughtModalSection = openThoughtModalSection;
 async function submitThought(e) {
     e.preventDefault();
     let b = document.getElementById('tSub'); b.disabled = true; b.innerText = cbtText('saving');
+    const isEditing = _editingThoughtId !== null;
     let d;
     if (_thoughtType === 'gratitude') {
         const text = document.getElementById('gratText').value.trim();
@@ -358,18 +436,50 @@ async function submitThought(e) {
         };
     }
     try {
-        await fetch(API + '/api/thoughts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(d) });
+        const url = isEditing ? API + '/api/thoughts/' + _editingThoughtId : API + '/api/thoughts';
+        const method = isEditing ? 'PUT' : 'POST';
+        const response = await fetch(url, { method: method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(d) });
+        if (!response.ok) throw new Error('Failed to save thought record');
         const savedType = _thoughtType;
         closeModal('thoughtModal');
-        document.getElementById('tForm').reset();
-        switchThoughtType('thought');
-        const msg = savedType === 'gratitude'
+        const msg = isEditing
+            ? cbtText('entryUpdated')
+            : savedType === 'gratitude'
             ? cbtText('gratitudeSaved')
             : cbtText('thoughtSaved');
         addMsg('assistant', msg);
     } catch (err) { alert(cbtText('saveError')); }
-    b.disabled = false; b.innerText = cbtText('entrySave');
+    b.disabled = false;
+    updateThoughtFormMode();
 }
+
+function editThoughtRecord(id) {
+    var record = (window._histRecs || []).find(function (item) {
+        return item && item.id === id && item.entryType !== 'rhythm';
+    });
+    if (!record) return;
+
+    closeModal('histModal');
+    resetThoughtEditor();
+    _editingThoughtId = id;
+
+    if (record.distortion === 'gratitude') {
+        switchThoughtType('gratitude');
+        document.getElementById('gratText').value = record.situation || '';
+    } else {
+        switchThoughtType('thought');
+        document.getElementById('tSit').value = record.situation || '';
+        document.getElementById('tThou').value = record.thought || '';
+        document.getElementById('tEmo').value = record.emotion || '';
+        document.getElementById('tInt').value = String(record.intensity ?? 5);
+        document.getElementById('tDist').value = record.distortion || '';
+        document.getElementById('tRat').value = record.rational_response || '';
+    }
+
+    updateThoughtFormMode();
+    openModal('thoughtModal');
+}
+window.editThoughtRecord = editThoughtRecord;
 
 async function openThoughtHistoryModal() {
     openModal('histModal');
@@ -398,7 +508,7 @@ async function openThoughtHistoryModal() {
         c.style.marginTop = '16px';
         c.innerHTML = `
             <div style="display:flex;gap:0;height:430px;margin:0 -12px 0 -4px;">
-                <div style="flex:0 0 246px;border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;padding-left:10px;">
+                <div style="flex:0 0 246px;border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;padding-left:4px;">
                     <div style="padding:10px 12px 8px 0;">
                         <input id="histSearch" type="text" placeholder="${cbtText('searchPlaceholder')}"
                             style="width:100%;padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px;background:var(--bg);color:var(--text);outline:none;box-sizing:border-box;"
@@ -481,12 +591,19 @@ function _renderHistList(recs, selectedIdx) {
             const isGratitude = r.distortion === 'gratitude';
             const isRhythm = r.entryType === 'rhythm';
             const preview = (r.situation || cbtText('noDescription')).slice(0, 55);
+            const editBtn = r.id && !isRhythm
+                ? `<button onclick="event.stopPropagation(); editThoughtRecord(${r.id})"
+                        title="${cbtText('edit')}"
+                        style="margin-left:auto;background:none;border:none;cursor:pointer;color:var(--gray);padding:4px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;">
+                        <i data-lucide="pencil" style="width:14px;"></i>
+                   </button>`
+                : '';
             html += `
                 <div class="hist-list-item${i === selectedIdx ? ' selected' : ''}"
                     data-hist-idx="${i}"
                     data-search="${((r.situation || '') + ' ' + (r.emotion || '') + ' ' + (r.thought || '') + ' ' + ((r.rhythm_items || []).map(function (a) { return a.text; }).join(' '))).toLowerCase()}"
                     onclick="selectHistItem(${i})">
-                    <div style="font-size:11px;color:var(--gray);margin-bottom:2px;">${isGratitude ? '🙏 ' : isRhythm ? '☑ ' : ''}${time}</div>
+                    <div style="font-size:11px;color:var(--gray);margin-bottom:2px;display:flex;align-items:center;gap:6px;">${isGratitude ? '🙏 ' : isRhythm ? '☑ ' : ''}${time}${editBtn}</div>
                     <div style="font-size:13px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${preview}</div>
                     ${r.emotion && !isGratitude && !isRhythm ? `<div style="font-size:11px;color:var(--accent);margin-top:2px;">${r.emotion}</div>` : ''}
                     ${isGratitude ? `<div style="font-size:11px;color:#6aa882;margin-top:2px;">${cbtText('gratitudeTag')}</div>` : ''}
@@ -507,9 +624,16 @@ function _renderHistDetail(r) {
             <i data-lucide="clock" style="width:12px;flex-shrink:0;"></i>
             <span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${dateStr}</span>
         </div>`;
+    const editAction = r.id && r.entryType !== 'rhythm'
+        ? `<div style="display:flex;justify-content:flex-end;margin-top:12px;">
+            <button onclick="editThoughtRecord(${r.id})" style="display:inline-flex;align-items:center;gap:6px;border:1px solid var(--border);background:var(--panel);color:var(--text);border-radius:10px;padding:8px 12px;cursor:pointer;font-size:12px;">
+                <i data-lucide="pencil" style="width:13px;"></i>${cbtText('edit')}
+            </button>
+        </div>`
+        : '';
     // Gratitude entry
     if (r.distortion === 'gratitude') {
-        return header + `
+        return header + editAction + `
         <div style="margin-top:12px; padding:16px; background:var(--bg); border-radius:12px; border:1px solid var(--border);">
             <div style="font-size:13px;font-weight:600;color:var(--accent);margin-bottom:10px;display:flex;align-items:center;gap:6px;">
                 🙏 ${cbtText('gratitudeTag')}
@@ -540,7 +664,7 @@ function _renderHistDetail(r) {
             <div class="hist-detail-label">${label}</div>
             <div class="hist-detail-value">${val}</div>
         </div>` : '';
-    return header +
+    return header + editAction +
         field(cbtText('fieldSituation'), r.situation) +
         field(cbtText('fieldAutomaticThought'), r.thought) +
         (r.emotion ? `<div class="hist-detail-field">
@@ -920,10 +1044,64 @@ function refreshLocalizedTests() {
 window.refreshLocalizedTests = refreshLocalizedTests;
 
 /* ── Sleep Diary ── */
-let sleepLog = JSON.parse(localStorage.getItem('sleepLog') || '[]');
+let _sleepInit = normalizeLocalEntries(JSON.parse(localStorage.getItem('sleepLog') || '[]'), 'sleep');
+let sleepLog = _sleepInit.entries;
+if (_sleepInit.changed) localStorage.setItem('sleepLog', JSON.stringify(sleepLog));
+
+function persistSleepLog() {
+    localStorage.setItem('sleepLog', JSON.stringify(sleepLog));
+    syncData('/api/sync/sleep', 'sleepLog');
+}
+
+function updateSleepFormMode() {
+    var title = document.getElementById('sleepModalTitle');
+    var submit = document.getElementById('sleepSubmitBtn');
+    if (title) title.innerText = _editingSleepId ? cbtText('editSleepTitle') : cbtText('sleep_add_title');
+    if (submit) submit.innerText = _editingSleepId ? cbtText('saveChanges') : cbtText('save_entry');
+}
+
+function resetSleepEditor() {
+    _editingSleepId = null;
+    var form = document.querySelector('#sleepModal form');
+    if (form) form.reset();
+    var bed = document.getElementById('slBed');
+    var wake = document.getElementById('slWake');
+    var awake = document.getElementById('slAwk');
+    var qual = document.getElementById('slQual');
+    var qualLabel = document.getElementById('slQualLabel');
+    var notes = document.getElementById('slNotes');
+    if (bed) bed.value = '23:00';
+    if (wake) wake.value = '07:00';
+    if (awake) awake.value = '0';
+    if (qual) qual.value = '6';
+    if (qualLabel) qualLabel.innerText = '6';
+    if (notes) notes.value = '';
+    updateSleepFormMode();
+}
+window.resetSleepEditor = resetSleepEditor;
+
+function openSleepEntryModal(entryId) {
+    resetSleepEditor();
+    if (entryId) {
+        var record = sleepLog.find(function (item) { return item.id === entryId; });
+        if (record) {
+            _editingSleepId = entryId;
+            document.getElementById('slBed').value = record.bed || '23:00';
+            document.getElementById('slWake').value = record.wake || '07:00';
+            document.getElementById('slAwk').value = String(record.awk ?? 0);
+            document.getElementById('slQual').value = String(record.qual ?? 6);
+            document.getElementById('slQualLabel').innerText = String(record.qual ?? 6);
+            document.getElementById('slNotes').value = record.notes || '';
+        }
+    }
+    updateSleepFormMode();
+    openModal('sleepModal');
+}
+window.openSleepEntryModal = openSleepEntryModal;
 
 function submitSleep(e) {
     e.preventDefault();
+    const wasEditing = _editingSleepId !== null;
     let bed = document.getElementById('slBed').value;
     let wake = document.getElementById('slWake').value;
     let awk = parseInt(document.getElementById('slAwk').value) || 0;
@@ -938,15 +1116,30 @@ function submitSleep(e) {
     if (wakeMins < bedMins) wakeMins += 24 * 60;
     let durHrs = ((wakeMins - bedMins) / 60).toFixed(1);
 
-    let entry = { date: new Date().toLocaleDateString(cbtLocale(), { day: 'numeric', month: 'short' }), bed, wake, awk, qual, notes, durHrs, isoDate: new Date().toISOString() };
-    sleepLog.unshift(entry);
-    if (sleepLog.length > 30) sleepLog.pop();
-    localStorage.setItem('sleepLog', JSON.stringify(sleepLog));
-    syncData('/api/sync/sleep', 'sleepLog');
-    e.target.reset();
-    document.getElementById('slQualLabel').innerText = '6';
+    if (_editingSleepId) {
+        sleepLog = sleepLog.map(function (entry) {
+            if (entry.id !== _editingSleepId) return entry;
+            return Object.assign({}, entry, { bed, wake, awk, qual, notes, durHrs });
+        });
+    } else {
+        let entry = {
+            id: makeLocalEntryId('sleep'),
+            date: new Date().toLocaleDateString(cbtLocale(), { day: 'numeric', month: 'short' }),
+            bed,
+            wake,
+            awk,
+            qual,
+            notes,
+            durHrs,
+            isoDate: new Date().toISOString()
+        };
+        sleepLog.unshift(entry);
+        if (sleepLog.length > 30) sleepLog.pop();
+    }
+    persistSleepLog();
     closeModal('sleepModal');
     openSleepHistoryModal();
+    addMsg('assistant', wasEditing ? cbtText('sleepEntryUpdated') : cbtText('sleepEntrySaved'));
 }
 
 function openSleepHistoryModal() {
@@ -972,7 +1165,7 @@ function openSleepHistoryModal() {
     c.style.marginTop = '16px';
     c.innerHTML = `
         <div style="display:flex;gap:0;height:430px;margin:0 -12px 0 -4px;">
-            <div style="flex:0 0 246px;border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;padding-left:10px;">
+            <div style="flex:0 0 246px;border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;padding-left:4px;">
                 <div id="sleepHistListItems" style="overflow-y:auto;flex:1;padding:8px 10px 8px 0;">
                     ${_renderSleepHistList(recs, 0)}
                 </div>
@@ -1016,6 +1209,13 @@ function _renderSleepHistDetail(r) {
     if (!r) return `<div style="color:var(--gray);text-align:center;padding-top:80px;font-size:13px;">${cbtText('selectEntry')}</div>`;
     const d = r.isoDate ? new Date(r.isoDate) : new Date();
     const dateStr = d.toLocaleDateString(cbtLocale(), { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+    const editAction = r.id
+        ? `<div style="display:flex;justify-content:flex-end;margin-bottom:12px;">
+            <button onclick="editSleepEntry('${inlineJsString(r.id)}')" style="display:inline-flex;align-items:center;gap:6px;border:1px solid var(--border);background:var(--panel);color:var(--text);border-radius:10px;padding:8px 12px;cursor:pointer;font-size:12px;">
+                <i data-lucide="pencil" style="width:13px;"></i>${cbtText('edit')}
+            </button>
+        </div>`
+        : '';
 
     // Calculate simple stats blocks for sleep
     return `
@@ -1023,6 +1223,7 @@ function _renderSleepHistDetail(r) {
             <i data-lucide="calendar" style="width:12px;flex-shrink:0;"></i>
             <span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${dateStr}</span>
         </div>
+        ${editAction}
         
         <div style="display:flex;gap:12px;margin-bottom:24px;">
             <div style="flex:1;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:14px;text-align:center;">
@@ -1050,6 +1251,11 @@ function _renderSleepHistDetail(r) {
         </div>` : ''}`;
 }
 
+function editSleepEntry(entryId) {
+    closeModal('sleepHistModal');
+    openSleepEntryModal(entryId);
+}
+
 function selectSleepHistItem(idx) {
     document.querySelectorAll('[data-sleep-hist-idx]').forEach(el => {
         el.classList.toggle('selected', parseInt(el.dataset.sleepHistIdx) === idx);
@@ -1063,11 +1269,19 @@ function selectSleepHistItem(idx) {
 
 window.openSleepHistoryModal = openSleepHistoryModal;
 window.selectSleepHistItem = selectSleepHistItem;
+window.editSleepEntry = editSleepEntry;
 
 
 /* ── Activity Planner ── */
-let activities = JSON.parse(localStorage.getItem('activities') || '[]');
+let _activitiesInit = normalizeLocalEntries(JSON.parse(localStorage.getItem('activities') || '[]'), 'activity');
+let activities = _activitiesInit.entries;
+if (_activitiesInit.changed) localStorage.setItem('activities', JSON.stringify(activities));
 let actMoodIdx = -1;
+
+function persistActivities() {
+    localStorage.setItem('activities', JSON.stringify(activities));
+    syncData('/api/sync/activities', 'activities');
+}
 
 const RHYTHM_SLOTS = [
     { id: 'morning', icon: 'sunrise', title: 'Старт дня', color: '#f59e0b', suggestions: ['Выпить стакан воды', 'Заправить кровать', 'Сделать глубокий вдох', 'Умыться'], title_en: 'Start of day', suggestions_en: ['Drink a glass of water', 'Make the bed', 'Take one deep breath', 'Wash your face'] },
@@ -1121,6 +1335,7 @@ function renderActivities() {
             html += '<div style="font-size:14px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;' + (actObj.done ? 'text-decoration:line-through;color:var(--gray);' : '') + '">' + actObj.text + '</div>';
             html += '</div>';
             html += moodBadge;
+            html += '<button onclick="editActivity(' + actGlobalIdx + ')" title="' + cbtText('edit') + '" style="background:none;border:none;cursor:pointer;color:var(--gray);font-size:16px;padding:4px;margin-left:8px;display:flex;align-items:center;"><i data-lucide="pencil" style="width:16px;"></i></button>';
             html += '<input type="checkbox" ' + (actObj.done ? 'checked' : '') + ' onchange="toggleActivity(' + actGlobalIdx + ')" style="width:22px;height:22px;accent-color:var(--accent);cursor:pointer;flex-shrink:0;margin-left:12px;">';
             if (!actObj.done) {
                 html += '<button onclick="removeActivity(' + actGlobalIdx + ')" title="' + cbtText('delete') + '" style="background:none;border:none;cursor:pointer;color:var(--gray);font-size:16px;padding:4px;margin-left:4px;display:flex;align-items:center;"><i data-lucide="trash-2" style="width:16px;"></i></button>';
@@ -1166,6 +1381,7 @@ function renderActivities() {
         html += '<div style="font-size:14px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;' + (actObj.done ? 'text-decoration:line-through;color:var(--gray);' : '') + '">' + actObj.text + '</div>';
         html += '</div>';
         html += moodBadge;
+        html += '<button onclick="editActivity(' + actGlobalIdx + ')" title="' + cbtText('edit') + '" style="background:none;border:none;cursor:pointer;color:var(--gray);font-size:16px;padding:4px;margin-left:8px;display:flex;align-items:center;"><i data-lucide="pencil" style="width:16px;"></i></button>';
         html += '<input type="checkbox" ' + (actObj.done ? 'checked' : '') + ' onchange="toggleActivity(' + actGlobalIdx + ')" style="width:22px;height:22px;accent-color:var(--accent);cursor:pointer;flex-shrink:0;margin-left:12px;">';
         if (!actObj.done) {
             html += '<button onclick="removeActivity(' + actGlobalIdx + ')" title="' + cbtText('delete') + '" style="background:none;border:none;cursor:pointer;color:var(--gray);font-size:16px;padding:4px;margin-left:4px;display:flex;align-items:center;"><i data-lucide="trash-2" style="width:16px;"></i></button>';
@@ -1218,14 +1434,14 @@ function addSlotActivity(slotId) {
         txt = inp.getAttribute('placeholder').replace(cbtText('forExample'), '');
     }
     activities.unshift({
+        id: makeLocalEntryId('activity'),
         text: txt,
         done: false,
         category: slotId,
         date: new Date().toLocaleDateString(cbtLocale()),
         isoDate: new Date().toISOString()
     });
-    localStorage.setItem('activities', JSON.stringify(activities));
-    syncData('/api/sync/activities', 'activities');
+    persistActivities();
     renderActivities();
 }
 window.addSlotActivity = addSlotActivity;
@@ -1240,14 +1456,14 @@ function addCustomSlotActivity() {
         return;
     }
     activities.unshift({
+        id: makeLocalEntryId('activity'),
         text: txt,
         done: false,
         category: 'custom_' + Date.now(),
         date: new Date().toLocaleDateString(cbtLocale()),
         isoDate: new Date().toISOString()
     });
-    localStorage.setItem('activities', JSON.stringify(activities));
-    syncData('/api/sync/activities', 'activities');
+    persistActivities();
     window._showCustomActInput = false;
     renderActivities();
 }
@@ -1318,14 +1534,14 @@ function addActivityFromAI(txt) {
     var slotId = emptySlot ? emptySlot.id : 'joy';
 
     activities.unshift({
+        id: makeLocalEntryId('activity'),
         text: txt,
         done: false,
         category: slotId,
         date: new Date().toLocaleDateString(cbtLocale()),
         isoDate: new Date().toISOString()
     });
-    localStorage.setItem('activities', JSON.stringify(activities));
-    syncData('/api/sync/activities', 'activities');
+    persistActivities();
     renderActivities();
     var btnMessage = document.getElementById('messages');
     var div = document.createElement('div');
@@ -1342,8 +1558,7 @@ window.addActivityFromAI = addActivityFromAI;
 function toggleActivity(i) {
     var wasNotDone = !activities[i].done;
     activities[i].done = !activities[i].done;
-    localStorage.setItem('activities', JSON.stringify(activities));
-    syncData('/api/sync/activities', 'activities');
+    persistActivities();
 
     if (wasNotDone) {
         playActSuccessSound();
@@ -1369,8 +1584,7 @@ window.toggleActivity = toggleActivity;
 function setActMood(val) {
     if (actMoodIdx >= 0 && actMoodIdx < activities.length) {
         activities[actMoodIdx].mood = val;
-        localStorage.setItem('activities', JSON.stringify(activities));
-        syncData('/api/sync/activities', 'activities');
+        persistActivities();
     }
     actMoodIdx = -1;
     var popup = document.getElementById('actMoodPopup');
@@ -1388,11 +1602,24 @@ window.skipActMood = skipActMood;
 
 function removeActivity(i) {
     activities.splice(i, 1);
-    localStorage.setItem('activities', JSON.stringify(activities));
-    syncData('/api/sync/activities', 'activities');
+    persistActivities();
     renderActivities();
 }
 window.removeActivity = removeActivity;
+
+function editActivity(i) {
+    var current = activities[i];
+    if (!current) return;
+    var next = window.prompt(cbtText('editActivityPrompt'), current.text || '');
+    if (next === null) return;
+    next = next.trim();
+    if (!next || next === current.text) return;
+    activities[i].text = next;
+    persistActivities();
+    renderActivities();
+    addMsg('assistant', cbtText('activityUpdated'));
+}
+window.editActivity = editActivity;
 window.renderActivities = renderActivities;
 
 /* ── Calendar ── */
@@ -1625,6 +1852,7 @@ async function loadInsights() {
 
     const payload = {
         session_id: SESSION_ID,
+        lang: localStorage.getItem('APP_LANG') || 'ru',
         mood_log: JSON.parse(localStorage.getItem('moodLog') || '[]'),
         sleep_log: JSON.parse(localStorage.getItem('sleepLog') || '[]'),
         activities: JSON.parse(localStorage.getItem('activities') || '[]'),

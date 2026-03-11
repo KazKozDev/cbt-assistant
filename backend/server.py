@@ -105,6 +105,16 @@ class ThoughtRecordRequest(BaseModel):
     rational_response: str
 
 
+class ThoughtRecordUpdateRequest(BaseModel):
+    session_id: str = "default"
+    situation: str
+    thought: str
+    emotion: str
+    intensity: int
+    distortion: str
+    rational_response: str
+
+
 class SyncRequest(BaseModel):
     session_id: str = "default"
     items: list[dict]
@@ -594,6 +604,27 @@ async def get_thought_records(session_id: str):
     return {"thought_records": session.get("thought_records", [])}
 
 
+@app.put("/api/thoughts/{thought_id}")
+async def update_thought_record(thought_id: int, req: ThoughtRecordUpdateRequest):
+    updated = sessions.update_thought_record(
+        thought_id,
+        req.session_id,
+        req.situation,
+        req.thought,
+        req.emotion,
+        req.intensity,
+        req.distortion,
+        req.rational_response,
+    )
+    if not updated:
+        raise HTTPException(status_code=404, detail="Thought record not found")
+
+    return {
+        "status": "ok",
+        "thought_records": sessions.get_or_create(req.session_id)["thought_records"],
+    }
+
+
 @app.get("/api/session/{session_id}")
 async def get_session(session_id: str):
     return sessions.get_or_create(session_id)
@@ -631,6 +662,7 @@ async def sync_activities(req: SyncRequest):
 
 class InsightsRequest(BaseModel):
     session_id: str = "default"
+    lang: str = "ru"
     mood_log: list[dict] = []
     sleep_log: list[dict] = []
     activities: list[dict] = []
@@ -641,6 +673,7 @@ class InsightsRequest(BaseModel):
 
 def _build_insights_prompt(req: InsightsRequest) -> str:
     """Build a data summary for the LLM, only including sections that have real data."""
+    en = req.lang == "en"
     sections = []
 
     # IMPORTANT: we only include a section if data actually exists.
@@ -651,10 +684,16 @@ def _build_insights_prompt(req: InsightsRequest) -> str:
         scores = [e.get("score") for e in recent if e.get("score") is not None]
         if scores:
             avg = round(sum(scores) / len(scores), 1)
-            sections.append(
-                f"НАСТРОЕНИЕ (из записей дневника настроения — {len(scores)} оценок за последние дни):\n"
-                f"  Средняя оценка: {avg}/10. Оценки: {scores[:10]}"
-            )
+            if en:
+                sections.append(
+                    f"MOOD (from mood journal — {len(scores)} entries over recent days):\n"
+                    f"  Average score: {avg}/10. Scores: {scores[:10]}"
+                )
+            else:
+                sections.append(
+                    f"НАСТРОЕНИЕ (из записей дневника настроения — {len(scores)} оценок за последние дни):\n"
+                    f"  Средняя оценка: {avg}/10. Оценки: {scores[:10]}"
+                )
 
     if req.sleep_log:
         recent_sleep = sorted(req.sleep_log, key=lambda x: x.get("isoDate", ""), reverse=True)[:7]
@@ -663,45 +702,92 @@ def _build_insights_prompt(req: InsightsRequest) -> str:
             hours = s.get("hours") or s.get("duration")
             quality = s.get("quality")
             if hours or quality:
-                sleep_info.append(f"часов сна: {hours}, качество: {quality}")
+                if en:
+                    sleep_info.append(f"hours slept: {hours}, quality: {quality}")
+                else:
+                    sleep_info.append(f"часов сна: {hours}, качество: {quality}")
         if sleep_info:
-            sections.append(
-                f"СОН (записи дневника сна — {len(sleep_info)} дней):\n  " +
-                "\n  ".join(sleep_info)
-            )
+            if en:
+                sections.append(
+                    f"SLEEP (sleep journal — {len(sleep_info)} days):\n  " +
+                    "\n  ".join(sleep_info)
+                )
+            else:
+                sections.append(
+                    f"СОН (записи дневника сна — {len(sleep_info)} дней):\n  " +
+                    "\n  ".join(sleep_info)
+                )
 
     if req.activities:
         done = [a for a in req.activities if a.get("done")]
         pending = [a for a in req.activities if not a.get("done")]
-        sections.append(
-            f"АКТИВНОСТИ (планировщик): выполнено {len(done)}, не выполнено/в плане {len(pending)}"
-        )
+        if en:
+            sections.append(
+                f"ACTIVITIES (planner): completed {len(done)}, pending/planned {len(pending)}"
+            )
+        else:
+            sections.append(
+                f"АКТИВНОСТИ (планировщик): выполнено {len(done)}, не выполнено/в плане {len(pending)}"
+            )
 
     if req.phq_history:
         recent_phq = sorted(req.phq_history, key=lambda x: x.get("date", ""), reverse=True)[:3]
         phq_info = [f"PHQ-9: {e.get('score')} ({e.get('date', '')[:10]})" for e in recent_phq]
-        sections.append("ТЕСТЫ PHQ-9 (депрессия):\n  " + "\n  ".join(phq_info))
+        if en:
+            sections.append("PHQ-9 TESTS (depression):\n  " + "\n  ".join(phq_info))
+        else:
+            sections.append("ТЕСТЫ PHQ-9 (депрессия):\n  " + "\n  ".join(phq_info))
 
     if req.gad_history:
         recent_gad = sorted(req.gad_history, key=lambda x: x.get("date", ""), reverse=True)[:3]
         gad_info = [f"GAD-7: {e.get('score')} ({e.get('date', '')[:10]})" for e in recent_gad]
-        sections.append("ТЕСТЫ GAD-7 (тревога):\n  " + "\n  ".join(gad_info))
+        if en:
+            sections.append("GAD-7 TESTS (anxiety):\n  " + "\n  ".join(gad_info))
+        else:
+            sections.append("ТЕСТЫ GAD-7 (тревога):\n  " + "\n  ".join(gad_info))
 
     if req.thought_records:
         emotions = [t.get("emotion", "") for t in req.thought_records if t.get("emotion")]
         distortions = [t.get("distortion", "") for t in req.thought_records if t.get("distortion")]
-        sections.append(
-            f"КПТ-ДНЕВНИК МЫСЛЕЙ ({len(req.thought_records)} записей):\n"
-            f"  Упомянутые эмоции: {', '.join(emotions[:8])}\n"
-            f"  Когнитивные искажения: {', '.join(set(distortions[:6]))}"
-        )
+        if en:
+            sections.append(
+                f"CBT THOUGHT JOURNAL ({len(req.thought_records)} entries):\n"
+                f"  Emotions mentioned: {', '.join(emotions[:8])}\n"
+                f"  Cognitive distortions: {', '.join(set(distortions[:6]))}"
+            )
+        else:
+            sections.append(
+                f"КПТ-ДНЕВНИК МЫСЛЕЙ ({len(req.thought_records)} записей):\n"
+                f"  Упомянутые эмоции: {', '.join(emotions[:8])}\n"
+                f"  Когнитивные искажения: {', '.join(set(distortions[:6]))}"
+            )
 
     if not sections:
         return None  # No data at all
 
     data_block = "\n\n".join(sections)
 
-    return f"""Ты — заботливый ассистент, который помогает человеку лучше понять себя.
+    if en:
+        return f"""You are a caring assistant helping a person better understand themselves.
+Below is data from their personal journal over recent days. This is only what they have filled in themselves.
+
+CRITICAL RULE: The absence of data in any section means only that the person did not fill in that section — it does NOT mean they slept poorly, were inactive, or were in a bad mood. Never draw conclusions from missing data.
+
+Data:
+{data_block}
+
+Task: Write 2–3 gentle observations in English, based ONLY on what is present in the data above.
+Rules:
+- Use phrases like: "it seems", "possibly", "it looks like", "interestingly", "noticeably", "based on the entries"
+- Do NOT make diagnoses or definitive conclusions
+- You may end an observation with a gentle question
+- Each observation is a separate paragraph, 1–2 sentences
+- Tone: warm, like an attentive friend, not a doctor
+- Reply only in English, no headings, no bullet lists — just paragraphs
+
+If there is too little data for meaningful observations, write one gentle sentence about that."""
+    else:
+        return f"""Ты — заботливый ассистент, который помогает человеку лучше понять себя.
 Ниже — данные из его личного дневника за последнее время. Это только то, что он сам заполнял.
 
 ВАЖНЕЙШЕЕ ПРАВИЛО: Отсутствие данных в каком-либо разделе означает только то, что человек не заполнял этот раздел — это НЕ значит, что он плохо спал, не двигался или был в плохом настроении. Никогда не делай выводов об отсутствующих данных.
@@ -724,17 +810,26 @@ def _build_insights_prompt(req: InsightsRequest) -> str:
 @app.post("/api/insights")
 async def generate_insights(req: InsightsRequest):
     """Generate soft AI observations based only on available user data."""
+    en = req.lang == "en"
     prompt = _build_insights_prompt(req)
 
     if prompt is None:
-        return {
-            "insights": "Пока данных для наблюдений немного — чем больше ты заполняешь дневник, тем точнее я смогу замечать паттерны.",
-            "has_data": False
-        }
+        if en:
+            no_data_msg = (
+                "Not enough data for observations yet — "
+                "the more you fill in your journal, the better I can notice patterns."
+            )
+        else:
+            no_data_msg = (
+                "Пока данных для наблюдений немного — чем больше ты заполняешь дневник, "
+                "тем точнее я смогу замечать паттерны."
+            )
+        return {"insights": no_data_msg, "has_data": False}
 
+    user_prompt = "Write the observations." if en else "Напиши наблюдения."
     messages = [
         {"role": "system", "content": prompt},
-        {"role": "user", "content": "Напиши наблюдения."}
+        {"role": "user", "content": user_prompt},
     ]
 
     try:
@@ -748,11 +843,19 @@ async def generate_insights(req: InsightsRequest):
         )
         text = resp.get("content", "").strip()
         if not text:
-            text = "Пока сложно заметить что-то определённое — продолжай вести записи."
+            text = (
+                "Nothing definitive to notice yet — keep filling in your journal."
+                if en else
+                "Пока сложно заметить что-то определённое — продолжай вести записи."
+            )
         return {"insights": text, "has_data": True}
     except Exception as e:
-        return {"insights": "Не удалось получить наблюдения прямо сейчас.", "has_data": False, "error": str(e)}
-
+        err_msg = (
+            "Could not fetch insights right now."
+            if en else
+            "Не удалось получить наблюдения прямо сейчас."
+        )
+        return {"insights": err_msg, "has_data": False, "error": str(e)}
 
 @app.get("/api/knowledge/search")
 async def search_knowledge(q: str, top_k: int = 3):

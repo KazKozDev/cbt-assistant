@@ -58,15 +58,41 @@ def test_add_mood(db_manager):
 
 def test_add_thought_record(db_manager):
     session_id = "test_sess_4"
-    db_manager.add_thought_record(
+    thought_id = db_manager.add_thought_record(
         session_id, "situ", "thought", "emotion", 9, "distort", "rational"
     )
     
     session = db_manager.get_or_create(session_id)
     records = session["thought_records"]
     assert len(records) == 1
+    assert records[0]["id"] == thought_id
     assert records[0]["situation"] == "situ"
     assert records[0]["distortion"] == "distort"
+
+def test_update_thought_record(db_manager):
+    session_id = "test_sess_4_update"
+    thought_id = db_manager.add_thought_record(
+        session_id, "situ", "thought", "emotion", 9, "distort", "rational"
+    )
+
+    updated = db_manager.update_thought_record(
+        thought_id,
+        session_id,
+        "updated situation",
+        "updated thought",
+        "relief",
+        4,
+        "Не знаю",
+        "updated response",
+    )
+
+    assert updated is True
+    session = db_manager.get_or_create(session_id)
+    records = session["thought_records"]
+    assert len(records) == 1
+    assert records[0]["situation"] == "updated situation"
+    assert records[0]["thought"] == "updated thought"
+    assert records[0]["emotion"] == "relief"
 
 def test_sync_and_get_sleep_logs(db_manager):
     session_id = "test_sess_5"

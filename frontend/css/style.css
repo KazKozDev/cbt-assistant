@@ -36,6 +36,8 @@ body {
     display: flex;
     flex-direction: column;
     flex: 1;
+    min-height: 0;
+    height: 100vh;
     position: relative;
     transition: all 0.3s ease;
 }
@@ -108,7 +110,12 @@ body {
     padding: 20px;
     scroll-behavior: smooth;
     min-height: 0;
+    scrollbar-gutter: stable;
     /* critical: prevents flex child from overflowing */
+}
+
+.container:not(.empty-state) .chat-box {
+    padding-bottom: 148px;
 }
 
 .msg {
@@ -794,10 +801,10 @@ body {
 
 /* Diary two-column layout */
 .hist-list-item {
-    padding: 10px 12px;
+    padding: 10px 10px;
     cursor: pointer;
     border-radius: 8px;
-    margin: 2px 6px;
+    margin: 2px 4px 2px 2px;
     transition: background 0.15s;
 }
 
@@ -810,7 +817,7 @@ body {
 }
 
 .hist-group-label {
-    padding: 10px 12px 3px;
+    padding: 10px 10px 3px 4px;
     font-size: 10px;
     font-weight: 700;
     color: var(--gray);
