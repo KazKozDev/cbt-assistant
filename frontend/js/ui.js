@@ -548,7 +548,7 @@ function updateWelcomeMsg() {
     else if (h >= 23 || h < 5) { msg = t('welcome_night'); }
 
     let welText = document.getElementById('welcomeText');
-    if (welText) welText.innerText = msg + ', Artem';
+    if (welText) welText.innerText = msg;
 }
 
 async function checkH() {

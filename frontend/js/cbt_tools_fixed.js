@@ -47,7 +47,7 @@
 47:             else if (h >= 23 || h < 5) { msg = 'Доброй ночи'; }
 48: 
 49:             let welText = document.getElementById('welcomeText');
-50:             if (welText) welText.innerText = msg + ', Артем';
+50:             if (welText) welText.innerText = msg;
 51:         }
 52: 
 53:         async function checkH() {

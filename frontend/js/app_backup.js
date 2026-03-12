@@ -47,7 +47,7 @@ const API = window.location.origin;
             else if (h >= 23 || h < 5) { msg = 'Доброй ночи'; }
 
             let welText = document.getElementById('welcomeText');
-            if (welText) welText.innerText = msg + ', Артем';
+            if (welText) welText.innerText = msg;
         }
 
         async function checkH() {

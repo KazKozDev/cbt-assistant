@@ -16,6 +16,8 @@ venv/
 # Local tooling
 .zencoder/
 .zenflow/
+.env
+.env.*
 
 # Local app data
 data/*

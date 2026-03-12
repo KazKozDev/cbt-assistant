@@ -28,7 +28,7 @@ document.addEventListener('DOMContentLoaded', () => {
     welcome.innerHTML = `
                 <div style="display:flex; align-items:center; gap:12px;">
                     <i data-lucide="sparkle" id="welcomeIcon" style="width:32px; height:32px; color:var(--accent);"></i>
-                    <h1 id="welcomeText" style="font-family: Georgia, 'Times New Roman', serif; font-size:30px; font-weight:normal; color:var(--text); letter-spacing:-0.5px;">Добрый день, Артем</h1>
+                    <h1 id="welcomeText" style="font-family: Georgia, 'Times New Roman', serif; font-size:30px; font-weight:normal; color:var(--text); letter-spacing:-0.5px;">Добрый день</h1>
                 </div>`;
     messages.prepend(welcome);
     lucide.createIcons();
