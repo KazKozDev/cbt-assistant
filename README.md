@@ -2,8 +2,6 @@
   <img src="docs/img/rounded-logo.png" alt="CBT Assistant logo" height="200">
 </p>
 
-# CBT Assistant
-
 A local CBT-style assistant with a web UI, Ollama, RAG-powered knowledge search, conversational memory, journals, assessments, and SOS practices.
 
 Current release: `1.0.1`
