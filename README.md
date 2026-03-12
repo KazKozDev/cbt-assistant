@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/img/rounded-logo.png" alt="CBT Assistant logo" width="160">
+  <img src="docs/img/rounded-logo.png" alt="CBT Assistant logo" height="200">
 </p>
 
 # CBT Assistant
