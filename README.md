@@ -4,57 +4,57 @@
 
 # CBT Assistant
 
-A local CBT-style AI assistant with a web UI, Ollama, RAG-based knowledge search, conversational memory, journals, assessments, and SOS practices.
+A local CBT-style assistant with a web UI, Ollama, RAG-powered knowledge search, conversational memory, journals, assessments, and SOS practices.
 
 Current release: `1.0.1`
 
-The project is designed for local use: the backend runs on FastAPI, the frontend is served as a static web app, and both model responses and embeddings are handled through a local Ollama server.
+CBT Assistant is designed to run locally: the backend is built with FastAPI, the frontend is served as a static web app, and both model responses and embeddings are handled through a local Ollama server.
 
 ![CBT Assistant screenshot](docs/img/screenshot.png)
 
 ## What This Is
 
-CBT Assistant combines several workflows in one application:
+CBT Assistant brings several workflows together in a single local application:
 
-- chat with a local LLM;
-- semantic RAG search over CBT materials;
+- chat with an assistant powered by a local LLM;
+- semantic RAG search across CBT materials;
 - message history and session summaries stored in SQLite;
-- thought journaling and sleep journaling;
-- self-assessment with PHQ-9, GAD-7, and Rosenberg Self-Esteem Scale;
-- SOS tools for breathing, grounding, and short crisis-support practices;
+- thought and sleep journaling;
+- self-assessment tools including PHQ-9, GAD-7, and the Rosenberg Self-Esteem Scale;
+- SOS tools for breathing, grounding, and quick calming practices;
 - TTS playback and browser voice input.
 
-This is not a medical device and not a replacement for a doctor or therapist. It is useful as a local self-help assistant, but not as a source of diagnosis or emergency support.
+This is not a medical device and not a replacement for a doctor or therapist. It can be useful as a local self-help assistant, but it should not be used for diagnosis or emergency support.
 
 ## Key Features
 
 - `RU/EN` interface with assistant reply language switching.
 - Standard and streaming chat via `/api/chat` and `/api/chat/stream`.
-- Tool calling inside the conversation: knowledge search, sleep history, test history, activity history, activity creation, breathing practice trigger, and assessment recommendation.
+- In-conversation tool calling for knowledge search, sleep history, test history, activity history, activity creation, breathing practice triggers, and assessment recommendations.
 - Local knowledge base in `knowledge_base/*.md` with embeddings powered by Ollama.
 - Session memory with background conversation summarization.
-- Data stored in SQLite and partly in browser `localStorage`.
-- Report and history export flows.
+- Data stored in SQLite and partially in browser `localStorage`.
+- Export flows for reports and user history.
 - Web UI built with plain `HTML/CSS/JS`, no heavy frontend framework.
 
 ## How It Works
 
 ### Request Flow
 
-```
+```text
 Browser (frontend)
-    â
-    â¼
+    |
+    v
 FastAPI backend (backend/server.py)
-    âââ loads system prompt from config/prompts.yaml
-    âââ fetches session history + summary from SQLite
-    âââ runs tool calls (knowledge search, activity lookup, etc.)
-    â       âââ RAG: embeds query â searches knowledge_base/ via Ollama embeddings
-    âââ sends full context to Ollama LLM â streams reply back to browser
+    |-- loads the system prompt from config/prompts.yaml
+    |-- fetches session history and summary from SQLite
+    |-- runs tool calls (knowledge search, activity lookup, etc.)
+    |    `-- RAG: embeds the query and searches knowledge_base/ via Ollama embeddings
+    `-- sends the full context to Ollama and streams the reply back to the browser
 ```
 
 1. The user opens the frontend at `http://localhost:8000`.
-2. The FastAPI backend serves the API, websocket chat, TTS, and static files.
+2. The FastAPI backend serves the API, WebSocket chat, TTS, and static files.
 3. Messages and user records are stored in SQLite.
 4. When generating a reply, the assistant uses:
    - the system prompt from `config/prompts.yaml`,
@@ -71,7 +71,7 @@ FastAPI backend (backend/server.py)
 - [src/llm/ollama_client.py](src/llm/ollama_client.py) - client for `Ollama /api/chat`.
 - [src/rag/knowledge_base.py](src/rag/knowledge_base.py) - knowledge base loading and semantic search.
 - [src/utils/db.py](src/utils/db.py) - SQLite storage for sessions, journals, and synced data.
-- [src/memory/summarizer.py](src/memory/summarizer.py) - short-term memory / conversation summary logic.
+- [src/memory/summarizer.py](src/memory/summarizer.py) - conversation memory and summary logic.
 - [frontend/index.html](frontend/index.html) - main UI.
 
 ## Technology Stack
@@ -258,26 +258,26 @@ The project includes tests for:
 
 ## Troubleshooting
 
-**Startup is slow or hangs**
-On first run, embeddings are generated for all files in `knowledge_base/`. This can take a minute or two depending on hardware. Subsequent starts are fast.
+**Startup is slow or hangs**  
+On first run, embeddings are generated for all files in `knowledge_base/`. This can take a minute or two depending on your hardware. Subsequent starts are much faster.
 
-**`qwen3-embedding:4b` not found**
+**`qwen3-embedding:4b` not found**  
 The backend will attempt to pull it automatically via Ollama, but it is better to pull it manually before starting:
 ```bash
 ollama pull qwen3-embedding:4b
 ```
 
-**Port 8000 already in use**
-Another process is occupying the port. Either stop it or change the port in `backend/server.py`.
+**Port 8000 already in use**  
+Another process is already using the port. Stop that process or change the port in `backend/server.py`.
 
-**Ollama connection refused**
-Make sure `ollama serve` is running before starting the backend. Check that `OLLAMA_BASE_URL` points to the correct address.
+**Ollama connection refused**  
+Make sure `ollama serve` is running before starting the backend. Also check that `OLLAMA_BASE_URL` points to the correct address.
 
-**Voice input not working**
-Voice input uses the browser's Web Speech API, which is only available in Chromium-based browsers (Chrome, Edge) and Safari. It does not work in Firefox.
+**Voice input not working**  
+Voice input uses the browser's Web Speech API, which is available in Chromium-based browsers (Chrome, Edge) and Safari. It does not work in Firefox.
 
-**TTS not working**
-Requires the `edge-tts` package (included in `requirements.txt`) and a working internet connection for the first request. Check that the backend is running and reachable.
+**TTS not working**  
+This feature requires the `edge-tts` package (included in `requirements.txt`) and a working internet connection for the first request. Also check that the backend is running and reachable.
 
 ## Practical Notes
 
@@ -288,7 +288,7 @@ Requires the `edge-tts` package (included in `requirements.txt`) and a working i
 
 - The application is not intended for emergency psychiatric support.
 - The assistant can be wrong, hallucinate, or produce incomplete recommendations.
-- Assessment results and assistant responses must not be treated as a medical diagnosis.
+- Assessment results and assistant responses must not be treated as medical advice or diagnosis.
 
 ## License
 
