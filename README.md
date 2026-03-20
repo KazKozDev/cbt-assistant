@@ -147,6 +147,21 @@ The repository includes tests for database behavior, prompt generation, RAG sear
 
 Issues and pull requests are welcome. For substantial changes, open an issue first to align on scope before implementation.
 
+<details>
+  <summary>Areas where contributions would be especially useful</summary>
+
+  <ul>
+    <li>Expand and refine the local CBT knowledge base with better-structured clinical materials.</li>
+    <li>Add more tests for real user flows, including chat, memory, sync, and recommendation behavior.</li>
+    <li>Improve the frontend UX, accessibility, responsiveness, and language polish.</li>
+    <li>Extend journaling, assessments, and reporting workflows with clearer insights and history views.</li>
+    <li>Improve contextual memory and recommendation quality so responses better reflect long-term user state.</li>
+    <li>Strengthen safety behavior and guardrails for sensitive or crisis-adjacent conversations.</li>
+    <li>Improve onboarding and local setup with better scripts, checks, and troubleshooting paths.</li>
+    <li>Improve documentation with clearer setup notes, examples, and architectural explanations.</li>
+  </ul>
+</details>
+
 ## Status
 
 - Stage: working local application
