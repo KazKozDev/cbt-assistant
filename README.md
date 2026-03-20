@@ -5,11 +5,11 @@
 Local-first mental health companion for low mood, anxiety, depressive symptoms, and sleep-related difficulties, combining memory, guided self-help tools, and personalized recommendations shaped by the journals, assessments, and activity data tracked in the app, with guidance grounded in clinical research and the app's local CBT knowledge base.
 
 <p align="center">
-  <img alt="License" src="https://img.shields.io/badge/license-MIT-D6D6D6?style=flat-square&labelColor=F3F3F3&color=D6D6D6">
-  <img alt="Status" src="https://img.shields.io/badge/status-local%20app-CFCFCF?style=flat-square&labelColor=EEEEEE&color=CFCFCF">
-  <img alt="Version" src="https://img.shields.io/badge/version-1.0.1-C8C8C8?style=flat-square&labelColor=EAEAEA&color=C8C8C8">
-  <img alt="Python" src="https://img.shields.io/badge/python-3.10%2B-C1C1C1?style=flat-square&labelColor=E6E6E6&color=C1C1C1">
-  <img alt="Tests" src="https://img.shields.io/badge/tests-pytest-BABABA?style=flat-square&labelColor=E2E2E2&color=BABABA">
+  <img alt="License" src="https://img.shields.io/badge/license-MIT-CFCAD8?style=flat-square&labelColor=F3F1F6&color=CFCAD8">
+  <img alt="Status" src="https://img.shields.io/badge/status-local%20app-C4BDCF?style=flat-square&labelColor=ECE8F1&color=C4BDCF">
+  <img alt="Version" src="https://img.shields.io/badge/version-1.0.1-B9B1C6?style=flat-square&labelColor=E5E0EB&color=B9B1C6">
+  <img alt="Python" src="https://img.shields.io/badge/python-3.10%2B-AEA5BD?style=flat-square&labelColor=DDD8E5&color=AEA5BD">
+  <img alt="Tests" src="https://img.shields.io/badge/tests-pytest-A39AB4?style=flat-square&labelColor=D6D0DF&color=A39AB4">
 </p>
 
 ## Highlights
