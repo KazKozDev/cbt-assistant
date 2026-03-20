@@ -7,6 +7,8 @@ CBT Assistant is a local-first CBT companion with memory, guided self-help tools
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Status](https://img.shields.io/badge/status-local%20app-blue)
 ![Version](https://img.shields.io/badge/version-1.0.1-black)
+![Python](https://img.shields.io/badge/python-3.10%2B-blue)
+![Tests](https://img.shields.io/badge/tests-pytest-lightgrey)
 
 ## Highlights
 
