@@ -103,7 +103,7 @@ python backend/server.py
 
 5. Open `http://localhost:8000`.
 
-5. On macOS, you can also use `./start_cbt_assistant.command` after the virtual environment is prepared.
+6. On macOS, you can also use `./start_cbt_assistant.command` after the virtual environment is prepared.
 
 ## Usage
 
@@ -142,6 +142,10 @@ pytest
 ```
 
 The repository includes tests for database behavior, prompt generation, RAG search, memory logic, API endpoints, and selected interaction flows.
+
+## Contributing
+
+Issues and pull requests are welcome. For substantial changes, open an issue first to align on scope before implementation.
 
 ## Status
 
