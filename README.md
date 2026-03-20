@@ -6,11 +6,13 @@ CBT Assistant is a local-first CBT companion for low mood, anxiety, depressive s
 
 Its guidance approach and CBT techniques are grounded in real clinical research and the local knowledge base bundled with the app.
 
-![License](https://img.shields.io/badge/license-MIT-green)
-![Status](https://img.shields.io/badge/status-local%20app-blue)
-![Version](https://img.shields.io/badge/version-1.0.1-black)
-![Python](https://img.shields.io/badge/python-3.10%2B-blue)
-![Tests](https://img.shields.io/badge/tests-pytest-lightgrey)
+<p align="center">
+  <img alt="License" src="https://img.shields.io/badge/license-MIT-E6E6E6?style=flat-square&labelColor=F3F3F3&color=E6E6E6">
+  <img alt="Status" src="https://img.shields.io/badge/status-local%20app-E6E6E6?style=flat-square&labelColor=F3F3F3&color=E6E6E6">
+  <img alt="Version" src="https://img.shields.io/badge/version-1.0.1-E6E6E6?style=flat-square&labelColor=F3F3F3&color=E6E6E6">
+  <img alt="Python" src="https://img.shields.io/badge/python-3.10%2B-E6E6E6?style=flat-square&labelColor=F3F3F3&color=E6E6E6">
+  <img alt="Tests" src="https://img.shields.io/badge/tests-pytest-E6E6E6?style=flat-square&labelColor=F3F3F3&color=E6E6E6">
+</p>
 
 ## Highlights
 
