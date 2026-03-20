@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="docs/img/rounded-logo.png" alt="CBT Assistant logo" height="200">
+</p>
+
 # CBT Assistant
 
 Provides a local CBT-style mental health assistant with chat, guided self-help tools, and a browser UI powered by FastAPI and Ollama.
