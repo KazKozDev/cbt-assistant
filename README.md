@@ -2,7 +2,7 @@
   <img src="docs/img/rounded-logo.png" alt="CBT Assistant logo" height="160">
 </p>
 
-CBT Assistant provides a local CBT-style mental health assistant with chat, guided self-help tools, and a browser UI powered by FastAPI and Ollama.
+CBT Assistant is a local-first CBT companion with memory, guided self-help tools, and personalized recommendations based on the journals, assessments, and activity data it tracks in the app.
 
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Status](https://img.shields.io/badge/status-local%20app-blue)
