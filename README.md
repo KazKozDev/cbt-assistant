@@ -169,7 +169,7 @@ Issues and pull requests are welcome. For substantial changes, open an issue fir
 
 ---
 
-[MIT](LICENSE) - see [LICENSE](LICENSE)
+MIT - see [LICENSE](LICENSE)
 
 If you like this project, please give it a star ⭐
 
