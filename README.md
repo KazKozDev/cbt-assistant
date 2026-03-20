@@ -1,108 +1,77 @@
-<p align="center">
-  <img src="docs/img/rounded-logo.png" alt="CBT Assistant logo" height="200">
-</p>
+# CBT Assistant
 
-A local CBT-style assistant with a web UI, Ollama, RAG-powered knowledge search, conversational memory, journals, assessments, and SOS practices.
+Provides a local CBT-style mental health assistant with chat, guided self-help tools, and a browser UI powered by FastAPI and Ollama.
 
 Current release: `1.0.1`
 
-CBT Assistant is designed to run locally: the backend is built with FastAPI, the frontend is served as a static web app, and both model responses and embeddings are handled through a local Ollama server.
+## Highlights
+
+- Local-first chat with Ollama
+- RAG over CBT knowledge files
+- Session memory with summaries
+- Journals, assessments, and SOS tools
+- RU/EN interface and TTS
+
+## Demo
 
 ![CBT Assistant screenshot](docs/img/screenshot.png)
 
-## What This Is
+## Overview
 
-CBT Assistant brings several workflows together in a single local application:
+CBT Assistant combines conversational support, structured self-reflection tools, and retrieval over local CBT materials in one app. It is built for users who want a private, local workflow instead of a cloud chatbot, and for developers who want a small, inspectable codebase around FastAPI, SQLite, and Ollama. The backend serves the API and static frontend, stores session history in SQLite, and uses local LLM plus embedding models through Ollama.
 
-- chat with an assistant powered by a local LLM;
-- semantic RAG search across CBT materials;
-- message history and session summaries stored in SQLite;
-- thought and sleep journaling;
-- self-assessment tools including PHQ-9, GAD-7, and the Rosenberg Self-Esteem Scale;
-- SOS tools for breathing, grounding, and quick calming practices;
-- TTS playback and browser voice input.
+## Motivation
 
-This is not a medical device and not a replacement for a doctor or therapist. It can be useful as a local self-help assistant, but it should not be used for diagnosis or emergency support.
+Many mental health assistants are either generic chat wrappers or depend on remote APIs for every interaction. That creates two problems: weak domain grounding and low privacy for sensitive conversations. This project closes that gap by combining a local model, a local CBT knowledge base, structured journals and assessments, and lightweight memory. The result is a single-user assistant that keeps the stack understandable and the data on the user's machine.
 
-## Key Features
+## Features
 
-- `RU/EN` interface with assistant reply language switching.
-- Standard and streaming chat via `/api/chat` and `/api/chat/stream`.
-- In-conversation tool calling for knowledge search, sleep history, test history, activity history, activity creation, breathing practice triggers, and assessment recommendations.
-- Local knowledge base in `knowledge_base/*.md` with embeddings powered by Ollama.
-- Session memory with background conversation summarization.
-- Data stored in SQLite and partially in browser `localStorage`.
-- Export flows for reports and user history.
-- Web UI built with plain `HTML/CSS/JS`, no heavy frontend framework.
+- Chat endpoints for regular and streaming responses.
+- RAG search across Markdown knowledge files in `knowledge_base/`.
+- Background conversation summarization for longer sessions.
+- Mood tracking, thought records, sleep logs, and activity planning.
+- Built-in assessments for PHQ-9, GAD-7, and Rosenberg self-esteem.
+- SOS tools such as breathing and grounding support flows.
+- Text-to-speech with Edge voices and browser-side voice input support.
+- Static frontend built with plain HTML, CSS, and JavaScript.
 
-## How It Works
+## Architecture
 
-### Request Flow
+Components:
 
-```text
-Browser (frontend)
-    |
-    v
-FastAPI backend (backend/server.py)
-    |-- loads the system prompt from config/prompts.yaml
-    |-- fetches session history and summary from SQLite
-    |-- runs tool calls (knowledge search, activity lookup, etc.)
-    |    `-- RAG: embeds the query and searches knowledge_base/ via Ollama embeddings
-    `-- sends the full context to Ollama and streams the reply back to the browser
-```
+- `frontend/` renders the web UI and client-side interaction flows.
+- `backend/server.py` exposes the API, static files, WebSocket chat, sync routes, reporting, and TTS.
+- `src/llm/ollama_client.py` wraps Ollama chat and streaming calls.
+- `src/rag/knowledge_base.py` loads Markdown content, builds embeddings, and runs semantic search.
+- `src/utils/db.py` manages SQLite persistence for sessions, journals, tests, activities, and summaries.
+- `src/memory/summarizer.py` creates rolling session summaries after message thresholds.
 
-1. The user opens the frontend at `http://localhost:8000`.
-2. The FastAPI backend serves the API, WebSocket chat, TTS, and static files.
-3. Messages and user records are stored in SQLite.
-4. When generating a reply, the assistant uses:
-   - the system prompt from `config/prompts.yaml`,
-   - session history and summary,
-   - tool calling,
-   - RAG search over the local knowledge base.
-5. Ollama is used for:
-   - the main LLM;
-   - the embedding model for semantic search.
+Flow:
 
-### Main Components
+Browser UI -> FastAPI backend -> prompt assembly + SQLite context + tool calls -> Ollama chat/embeddings -> streamed or standard response back to the browser
 
-- [backend/server.py](backend/server.py) - FastAPI server and API logic.
-- [src/llm/ollama_client.py](src/llm/ollama_client.py) - client for `Ollama /api/chat`.
-- [src/rag/knowledge_base.py](src/rag/knowledge_base.py) - knowledge base loading and semantic search.
-- [src/utils/db.py](src/utils/db.py) - SQLite storage for sessions, journals, and synced data.
-- [src/memory/summarizer.py](src/memory/summarizer.py) - conversation memory and summary logic.
-- [frontend/index.html](frontend/index.html) - main UI.
+## Tech Stack
 
-## Technology Stack
-
-- Backend: FastAPI
-- Frontend: vanilla HTML/CSS/JS
-- LLM: Ollama
-- Default model: `qwen3:8b`
-- Embeddings: `qwen3-embedding:4b`
-- TTS: `edge-tts` / Microsoft Edge voices
-- Storage: SQLite + browser `localStorage`
-- Tests: `pytest`
-- License: MIT
+- Python 3.10+
+- FastAPI
+- Ollama
+- SQLite
+- httpx
+- edge-tts
+- pytest
+- Vanilla HTML/CSS/JS
 
 ## Quick Start
 
-### Requirements
-
-- Python 3.10+
-- [Ollama](https://ollama.com/) installed and running
-- Ollama server available at `http://localhost:11434`
-
-> **Windows / Linux:** the macOS `.command` launcher is not available, but the manual steps below work on all platforms.
-
-### Installation
+1. Create a virtual environment and install dependencies.
 
 ```bash
 python -m venv .venv
-source .venv/bin/activate        # Windows: .venv\Scripts\activate
+source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### Prepare Models
+2. Start Ollama and pull the required models.
 
 ```bash
 ollama serve
@@ -110,184 +79,67 @@ ollama pull qwen3:8b
 ollama pull qwen3-embedding:4b
 ```
 
-### Run
-
-In one terminal:
+3. Run the backend.
 
 ```bash
-ollama serve
-```
-
-In another:
-
-```bash
-source .venv/bin/activate        # Windows: .venv\Scripts\activate
+source .venv/bin/activate
 python backend/server.py
 ```
 
-Then open:
+4. Open `http://localhost:8000`.
 
-```text
-http://localhost:8000
-```
+5. On macOS, you can also use `./start_cbt_assistant.command` after the virtual environment is prepared.
 
-### Quick Launch on macOS
+## Usage
 
-The repo includes a helper script, [start_cbt_assistant.command](start_cbt_assistant.command), which:
-
-- checks that `.venv/bin/python` exists;
-- starts the backend in Terminal;
-- waits for the healthcheck;
-- opens the app in the browser.
-
-## Configuration
-
-Supported environment variables:
+Example run:
 
 ```bash
-OLLAMA_BASE_URL=http://localhost:11434
-OLLAMA_MODEL=qwen3:8b
+OLLAMA_BASE_URL=http://localhost:11434 \
+OLLAMA_MODEL=qwen3:8b \
+python backend/server.py
 ```
 
-Model parameters live in [config/model_config.yaml](config/model_config.yaml), and system prompts live in [config/prompts.yaml](config/prompts.yaml).
+Typical scenarios:
 
-## Data Storage
-
-### Backend
-
-- SQLite database: `data/cbt_sessions.db`
-- It stores:
-  - sessions;
-  - message history;
-  - mood logs;
-  - thought records;
-  - sleep logs;
-  - assessment results;
-  - activities;
-  - session summaries.
-
-### Browser
-
-Some settings and client-side data are stored in `localStorage`:
-
-| Key | What it holds |
-|-----|---------------|
-| `sleepLog` | Sleep journal entries (bedtime, wake time, quality) |
-| `activities` | User-defined behavioral activation activities |
-| `phqHistory` | PHQ-9 depression assessment history |
-| `gadHistory` | GAD-7 anxiety assessment history |
-| `esteemHistory` | Rosenberg Self-Esteem Scale history |
-| `notifSettings` | Notification preferences |
-| `ttsSettings` | Text-to-speech voice and speed settings |
-| `APP_LANG` | Selected interface language (`ru` or `en`) |
-
-Local runtime data in `data/` is intentionally gitignored so personal session data does not get committed to the repository.
-
-## API Overview
-
-### Chat
-
-- `POST /api/chat`
-- `POST /api/chat/stream`
-- `WS /ws/chat/{session_id}`
-
-### User Data
-
-- `POST /api/mood`
-- `GET /api/mood/{session_id}`
-- `POST /api/thoughts`
-- `GET /api/thoughts/{session_id}`
-- `GET /api/session/{session_id}`
-- `POST /api/session/{session_id}/save`
-
-### Sync
-
-- `POST /api/sync/sleep`
-- `POST /api/sync/tests`
-- `POST /api/sync/activities`
-
-### Knowledge and Insights
-
-- `GET /api/knowledge/search`
-- `POST /api/insights`
-- `GET /api/health`
-- `GET /api/report/{session_id}`
-- `POST /api/tts`
+- Ask for CBT-style guidance and let the assistant pull relevant context from the local knowledge base before answering.
+- Track mood, thought records, sleep, and activities over time in the same session store.
+- Use assessments and SOS tools from the browser UI without sending data to a hosted LLM service.
 
 ## Project Structure
 
 ```text
-backend/
-  server.py                FastAPI backend
-frontend/
-  index.html               main interface
-  css/
-  js/
-src/
-  llm/                     Ollama client
-  rag/                     semantic RAG
-  memory/                  summary / memory logic
-  prompts/                 prompt builder
-  utils/                   SQLite and helpers
-knowledge_base/            CBT materials for RAG
-config/                    model and prompt config
-data/                      SQLite database (gitignored)
-docs/
-  img/                     screenshots and assets
-tests/                     pytest suite
+backend/         FastAPI app and routes
+frontend/        Static UI assets
+src/llm/         Ollama integration
+src/rag/         Knowledge base loading and search
+src/memory/      Session summarization
+src/utils/       SQLite storage and helpers
+knowledge_base/  CBT source material for retrieval
+config/          Model and prompt settings
+tests/           Pytest suite
 ```
 
-## Tests
-
-Run:
+## Testing
 
 ```bash
 pytest
 ```
 
-The project includes tests for:
+The repository includes tests for database behavior, prompt generation, RAG search, memory logic, API endpoints, and selected interaction flows.
 
-- database logic;
-- the RAG component;
-- prompt logic;
-- server endpoints;
-- memory logic;
-- parts of end-to-end user flows.
+## Status
 
-## Troubleshooting
+- Stage: working local application
+- Current version: `1.0.1`
 
-**Startup is slow or hangs**  
-On first run, embeddings are generated for all files in `knowledge_base/`. This can take a minute or two depending on your hardware. Subsequent starts are much faster.
+---
 
-**`qwen3-embedding:4b` not found**  
-The backend will attempt to pull it automatically via Ollama, but it is better to pull it manually before starting:
-```bash
-ollama pull qwen3-embedding:4b
-```
+MIT - see LICENSE
 
-**Port 8000 already in use**  
-Another process is already using the port. Stop that process or change the port in `backend/server.py`.
+If you like this project, please give it a star ⭐
 
-**Ollama connection refused**  
-Make sure `ollama serve` is running before starting the backend. Also check that `OLLAMA_BASE_URL` points to the correct address.
+For questions, feedback, or support, reach out to:
 
-**Voice input not working**  
-Voice input uses the browser's Web Speech API, which is available in Chromium-based browsers (Chrome, Edge) and Safari. It does not work in Firefox.
-
-**TTS not working**  
-This feature requires the `edge-tts` package (included in `requirements.txt`) and a working internet connection for the first request. Also check that the backend is running and reachable.
-
-## Practical Notes
-
-- Some state lives in the browser and some in SQLite, so synchronization is not fully automatic in every scenario.
-- A production deployment would require additional work around security, authentication, privacy controls, and deployment hardening.
-
-## Limitations and Safety
-
-- The application is not intended for emergency psychiatric support.
-- The assistant can be wrong, hallucinate, or produce incomplete recommendations.
-- Assessment results and assistant responses must not be treated as medical advice or diagnosis.
-
-## License
-
-This project is released under the MIT License. See [LICENSE](LICENSE).
+[LinkedIn](https://www.linkedin.com/in/kazkozdev/)
+[Email](mailto:kazkozdev@gmail.com)
