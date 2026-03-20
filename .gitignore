@@ -18,6 +18,7 @@ venv/
 .zenflow/
 .env
 .env.*
+!.env.example
 
 # Local app data
 data/*
