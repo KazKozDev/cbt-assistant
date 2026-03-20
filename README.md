@@ -30,7 +30,7 @@ CBT Assistant combines conversational support, structured self-reflection tools,
 
 ## Motivation
 
-Many mental health assistants are either generic chat wrappers or depend on remote APIs for every interaction. That creates two problems: weak domain grounding and low privacy for sensitive conversations. This project closes that gap by combining a local model, a local CBT knowledge base, structured journals and assessments, and lightweight memory. The result is a single-user assistant that keeps the stack understandable and the data on the user's machine.
+Many mental health assistants are either generic chat wrappers or depend on remote APIs for every interaction. That creates two problems: weak domain grounding and low privacy for sensitive conversations. This project closes that gap by combining a local model, a local CBT knowledge base, structured journals and assessments, and lightweight memory. The stack is intentionally designed so a smaller local model can perform well without fine-tuning, relying instead on retrieval, structured user data, and context persistence to reduce hallucinations and keep behavior more grounded. The result is a single-user assistant that keeps the stack understandable and the data on the user's machine.
 
 ## Features
 
