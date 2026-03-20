@@ -4,6 +4,8 @@
 
 CBT Assistant is a local-first CBT companion for low mood, anxiety, depressive symptoms, and sleep-related difficulties, with memory, guided self-help tools, and personalized recommendations based on the journals, assessments, and activity data it tracks in the app.
 
+Its guidance approach and CBT techniques are grounded in real clinical research and the local knowledge base bundled with the app.
+
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Status](https://img.shields.io/badge/status-local%20app-blue)
 ![Version](https://img.shields.io/badge/version-1.0.1-black)
