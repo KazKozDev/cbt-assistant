@@ -12,7 +12,6 @@ Local-first mental health companion for low mood, anxiety, depressive symptoms, 
   <img alt="Status" src="https://img.shields.io/badge/status-local%20app-C2B5D4?style=flat-square&labelColor=EBE4F1&color=C2B5D4">
   <img alt="Version" src="https://img.shields.io/badge/version-1.0.1-AB98C6?style=flat-square&labelColor=E0D6EA&color=AB98C6">
   <img alt="Python" src="https://img.shields.io/badge/python-3.10%2B-937AB7?style=flat-square&labelColor=D2C4E3&color=937AB7">
-  <img alt="Tests" src="https://img.shields.io/badge/tests-pytest-7A5CA8?style=flat-square&labelColor=C3B0D9&color=7A5CA8">
 </p>
 
 ## Highlights
