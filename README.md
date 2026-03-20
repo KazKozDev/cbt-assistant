@@ -150,7 +150,7 @@ The repository includes tests for database behavior, prompt generation, RAG sear
 
 ---
 
-MIT - see LICENSE
+[MIT](LICENSE) - see [LICENSE](LICENSE)
 
 If you like this project, please give it a star ⭐
 
