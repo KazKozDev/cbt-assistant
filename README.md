@@ -2,7 +2,7 @@
   <img src="docs/img/rounded-logo.png" alt="CBT Assistant logo" height="144">
 </p>
 
-CBT Assistant is a local-first CBT companion with memory, guided self-help tools, and personalized recommendations based on the journals, assessments, and activity data it tracks in the app.
+CBT Assistant is a local-first CBT companion for low mood, anxiety, depressive symptoms, and sleep-related difficulties, with memory, guided self-help tools, and personalized recommendations based on the journals, assessments, and activity data it tracks in the app.
 
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Status](https://img.shields.io/badge/status-local%20app-blue)
@@ -69,7 +69,14 @@ Browser UI -> FastAPI backend -> prompt assembly + SQLite context + tool calls -
 
 ## Quick Start
 
-1. Create a virtual environment and install dependencies.
+1. Clone the repository and enter the project folder.
+
+```bash
+git clone https://github.com/KazKozDev/cbt-assistant.git
+cd cbt-assistant
+```
+
+2. Create a virtual environment and install dependencies.
 
 ```bash
 python -m venv .venv
@@ -77,7 +84,7 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-2. Start Ollama and pull the required models.
+3. Start Ollama and pull the required models.
 
 ```bash
 ollama serve
@@ -85,14 +92,14 @@ ollama pull qwen3:8b
 ollama pull qwen3-embedding:4b
 ```
 
-3. Run the backend.
+4. Run the backend.
 
 ```bash
 source .venv/bin/activate
 python backend/server.py
 ```
 
-4. Open `http://localhost:8000`.
+5. Open `http://localhost:8000`.
 
 5. On macOS, you can also use `./start_cbt_assistant.command` after the virtual environment is prepared.
 
