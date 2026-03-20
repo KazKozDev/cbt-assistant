@@ -2,14 +2,14 @@
   <img src="docs/img/rounded-logo.png" alt="CBT Assistant logo" height="144">
 </p>
 
-CBT Assistant is a local-first mental health companion for low mood, anxiety, depressive symptoms, and sleep-related difficulties, combining memory, guided self-help tools, and personalized recommendations shaped by the journals, assessments, and activity data tracked in the app, with guidance grounded in clinical research and the app's local CBT knowledge base.
+Local-first mental health companion for low mood, anxiety, depressive symptoms, and sleep-related difficulties, combining memory, guided self-help tools, and personalized recommendations shaped by the journals, assessments, and activity data tracked in the app, with guidance grounded in clinical research and the app's local CBT knowledge base.
 
 <p align="center">
-  <img alt="License" src="https://img.shields.io/badge/license-MIT-E6E6E6?style=flat-square&labelColor=F3F3F3&color=E6E6E6">
-  <img alt="Status" src="https://img.shields.io/badge/status-local%20app-E6E6E6?style=flat-square&labelColor=F3F3F3&color=E6E6E6">
-  <img alt="Version" src="https://img.shields.io/badge/version-1.0.1-E6E6E6?style=flat-square&labelColor=F3F3F3&color=E6E6E6">
-  <img alt="Python" src="https://img.shields.io/badge/python-3.10%2B-E6E6E6?style=flat-square&labelColor=F3F3F3&color=E6E6E6">
-  <img alt="Tests" src="https://img.shields.io/badge/tests-pytest-E6E6E6?style=flat-square&labelColor=F3F3F3&color=E6E6E6">
+  <img alt="License" src="https://img.shields.io/badge/license-MIT-D9D9D9?style=flat-square&labelColor=F2F2F2&color=D9D9D9">
+  <img alt="Status" src="https://img.shields.io/badge/status-local%20app-D9D9D9?style=flat-square&labelColor=F2F2F2&color=D9D9D9">
+  <img alt="Version" src="https://img.shields.io/badge/version-1.0.1-D9D9D9?style=flat-square&labelColor=F2F2F2&color=D9D9D9">
+  <img alt="Python" src="https://img.shields.io/badge/python-3.10%2B-D9D9D9?style=flat-square&labelColor=F2F2F2&color=D9D9D9">
+  <img alt="Tests" src="https://img.shields.io/badge/tests-pytest-D9D9D9?style=flat-square&labelColor=F2F2F2&color=D9D9D9">
 </p>
 
 ## Highlights
