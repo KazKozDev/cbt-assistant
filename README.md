@@ -1,10 +1,12 @@
 <p align="center">
-  <img src="docs/img/rounded-logo.png" alt="CBT Assistant logo" height="200">
+  <img src="docs/img/rounded-logo.png" alt="CBT Assistant logo" height="160">
 </p>
 
-# CBT Assistant
+CBT Assistant provides a local CBT-style mental health assistant with chat, guided self-help tools, and a browser UI powered by FastAPI and Ollama.
 
-Provides a local CBT-style mental health assistant with chat, guided self-help tools, and a browser UI powered by FastAPI and Ollama.
+![License](https://img.shields.io/badge/license-MIT-green)
+![Status](https://img.shields.io/badge/status-local%20app-blue)
+![Version](https://img.shields.io/badge/version-1.0.1-black)
 
 Current release: `1.0.1`
 
