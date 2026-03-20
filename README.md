@@ -5,6 +5,9 @@
 Local-first mental health companion for low mood, anxiety, depressive symptoms, and sleep-related difficulties, with contextual memory that helps the assistant understand your situation over time, guided self-help tools, and personalized recommendations shaped by the journals, assessments, and activity data tracked in the app, grounded in clinical research and informed by a local CBT knowledge base.
 
 <p align="center">
+  <a href="https://github.com/KazKozDev/cbt-assistant/actions/workflows/tests.yml">
+    <img alt="CI" src="https://github.com/KazKozDev/cbt-assistant/actions/workflows/tests.yml/badge.svg">
+  </a>
   <img alt="License" src="https://img.shields.io/badge/license-MIT-D8D1E2?style=flat-square&labelColor=F5F2F8&color=D8D1E2">
   <img alt="Status" src="https://img.shields.io/badge/status-local%20app-C2B5D4?style=flat-square&labelColor=EBE4F1&color=C2B5D4">
   <img alt="Version" src="https://img.shields.io/badge/version-1.0.1-AB98C6?style=flat-square&labelColor=E0D6EA&color=AB98C6">
