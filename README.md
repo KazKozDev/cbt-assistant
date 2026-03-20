@@ -2,7 +2,7 @@
   <img src="docs/img/rounded-logo.png" alt="CBT Assistant logo" height="144">
 </p>
 
-Local-first mental health companion for low mood, anxiety, depressive symptoms, and sleep-related difficulties, combining memory, guided self-help tools, and personalized recommendations shaped by the journals, assessments, and activity data tracked in the app, with guidance grounded in clinical research and the app's local CBT knowledge base.
+Local-first mental health companion for low mood, anxiety, depressive symptoms, and sleep-related difficulties, combining bot memory, guided self-help tools, and personalized recommendations shaped by the journals, assessments, and activity data tracked in the app, with recommendations and practices grounded in clinical research and the app's local CBT knowledge base.
 
 <p align="center">
   <img alt="License" src="https://img.shields.io/badge/license-MIT-D8D1E2?style=flat-square&labelColor=F5F2F8&color=D8D1E2">
