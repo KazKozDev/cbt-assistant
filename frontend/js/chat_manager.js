@@ -28,6 +28,7 @@ async function sendMessage() {
         let data = await res.json();
         document.getElementById('loading').remove();
         addMsg('assistant', data.response);
+        addRagSources(data.context_used || [], data.rag_trace);
         if (data.client_events) {
             data.client_events.forEach(ev => {
                 if (ev.type === 'add_activity' && window.addActivityFromAI) {
@@ -47,6 +48,37 @@ async function sendMessage() {
         addMsg('assistant', currentChatLanguage() === 'en' ? '⚠️ Request to the server failed.' : '⚠️ Ошибка запроса к серверу.');
     }
     isProc = false;
+}
+
+function addRagSources(context, trace) {
+    if (!context.length) return;
+    const list = document.getElementById('messages');
+    const panel = document.createElement('div');
+    panel.className = 'rag-sources';
+
+    const heading = document.createElement('div');
+    heading.className = 'rag-sources-title';
+    heading.textContent = currentChatLanguage() === 'en' ? 'Knowledge sources' : 'Источники базы знаний';
+    panel.appendChild(heading);
+
+    context.forEach(item => {
+        const source = document.createElement('div');
+        source.className = 'rag-source';
+        const label = document.createElement('span');
+        label.className = 'rag-source-label';
+        label.textContent = item.section_path || item.title;
+        const meta = document.createElement('code');
+        meta.textContent = `[KB:${item.chunk_id}] · ${item.source} · ${Number(item.score).toFixed(3)}`;
+        source.append(label, meta);
+        panel.appendChild(source);
+    });
+
+    if (trace?.trace_id) {
+        panel.dataset.traceId = trace.trace_id;
+        panel.title = `RAG trace ${trace.trace_id}, index ${trace.index_version}`;
+    }
+    list.appendChild(panel);
+    list.scrollTop = list.scrollHeight;
 }
 
 function addMsg(role, content, id = '') {

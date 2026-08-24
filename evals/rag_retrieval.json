@@ -1,0 +1,20 @@
+[
+  {"id":"ru_stimulus_control","query":"Что делать, если я лежу без сна больше двадцати минут?","expected_source":"cbt_insomnia_protocols.md","expected_section_contains":"Контроль стимулов"},
+  {"id":"en_stimulus_control","query":"Should I leave the bed when I cannot fall asleep?","expected_source":"cbt_insomnia_protocols.md","expected_section_contains":"Stimulus Control"},
+  {"id":"ru_sleep_restriction","query":"Как рассчитать окно сна и эффективность сна?","expected_source":"cbt_insomnia_protocols.md","expected_section_contains":"Ограничение сна"},
+  {"id":"ru_isi","query":"Как оценивают тяжесть бессонницы по ISI?","expected_source":"cbt_insomnia_protocols.md","expected_section_contains":"Индекс тяжести инсомнии"},
+  {"id":"ru_gad7","query":"Какая шкала используется для оценки генерализованной тревоги?","expected_source":"cbt_anxiety_protocols.md","expected_section_contains":"GAD-7"},
+  {"id":"en_worry_exposure","query":"How does imaginal worry exposure work for generalized anxiety?","expected_source":"cbt_anxiety_protocols.md","expected_section_contains":"Worry Exposure"},
+  {"id":"ru_problem_solving","query":"Как отличить решаемую проблему от гипотетического беспокойства?","expected_source":"cbt_anxiety_protocols.md","expected_section_contains":"решения проблем"},
+  {"id":"ru_phq9","query":"Как интерпретировать баллы опросника PHQ-9?","expected_source":"cbt_clinical_guide.md","expected_section_contains":"PHQ-9"},
+  {"id":"ru_behavioral_activation","query":"Что такое поведенческая активация при депрессии?","expected_source":"cbt_clinical_guide.md","expected_section_contains":"Поведенческая активация"},
+  {"id":"en_suicide_markers","query":"What warning signs indicate suicide risk?","expected_source":"cbt_clinical_guide.md","expected_section_contains":"Маркеры суицидального риска"},
+  {"id":"ru_relapse","query":"Из чего состоит план профилактики рецидива депрессии?","expected_source":"cbt_clinical_guide.md","expected_section_contains":"Компоненты плана"},
+  {"id":"ru_defusion","query":"Как посмотреть на мысль как на набор слов, а не как на истину?","expected_source":"cbt_psychological_skills.md","expected_section_contains":"РАСЦЕПЛЕНИЕ"},
+  {"id":"en_self_compassion","query":"What are practical self-compassion skills?","expected_source":"cbt_psychological_skills.md","expected_section_contains":"САМОСОСТРАДАНИЕ"},
+  {"id":"ru_radical_acceptance","query":"Что означает радикально принять реальность?","expected_source":"cbt_psychological_skills.md","expected_section_contains":"РАДИКАЛЬНОЕ ПРИНЯТИЕ"},
+  {"id":"negative_pasta","query":"Как сварить пасту карбонара?","expect_no_results":true},
+  {"id":"negative_git","query":"Как отменить последний коммит в git?","expect_no_results":true},
+  {"id":"negative_weather","query":"Какая завтра погода в Мадриде?","expect_no_results":true},
+  {"id":"negative_engine","query":"Почему стучит двигатель автомобиля?","expect_no_results":true}
+]

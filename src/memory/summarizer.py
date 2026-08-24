@@ -12,6 +12,8 @@ class MemorySummarizer:
         self.db = db
         self.llm_client = llm_client
         self.trigger_threshold = 15 # Summarize every 15 new messages
+        self._tasks: set[asyncio.Task] = set()
+        self._session_locks: dict[str, asyncio.Lock] = {}
 
     async def _generate_summary(self, old_summary: str, recent_messages: List[Dict]) -> str:
         prompt = """
@@ -19,9 +21,9 @@ class MemorySummarizer:
         Твоя задача — обновить текущее резюме (саммари) пациента на основе новых сообщений из чата.
 
         ПРАВИЛА:
-        1. Извлекай только ВАЖНЫЕ факты: триггеры, проблемы, применяемые методики, договоренности.
+        1. Извлекай только ВАЖНЫЕ факты: имя пользователя, имена близких и питомцев, предпочтения, триггеры, проблемы, применяемые методики и договоренности.
         2. Пиши кратко, емко, профессиональным языком.
-        3. Сохраняй контекст из старого саммари, дополняя его новыми деталями. Убирай то, что стало неактуальным.
+        3. Сохраняй контекст из старого саммари, дополняя его новыми деталями. Не удаляй имена и устойчивые личные факты без явного исправления пользователя. Убирай только то, что явно стало неактуальным.
         4. Если старого саммари нет, просто создай новое.
         5. Не используй общие фразы вроде "пациент пишет" или "я ответил".
 
@@ -45,10 +47,21 @@ class MemorySummarizer:
             return old_summary
 
     async def maybe_summarize(self, session_id: str):
-        # Fire and forget wrapper for summarization logic
-        asyncio.create_task(self._process_summarization(session_id))
+        task = asyncio.create_task(self._process_summarization(session_id))
+        self._tasks.add(task)
+        task.add_done_callback(self._tasks.discard)
+
+    async def close(self):
+        """Let scheduled summaries finish during an orderly server shutdown."""
+        if self._tasks:
+            await asyncio.gather(*tuple(self._tasks), return_exceptions=True)
 
     async def _process_summarization(self, session_id: str):
+        lock = self._session_locks.setdefault(session_id, asyncio.Lock())
+        async with lock:
+            await self._process_summarization_locked(session_id)
+
+    async def _process_summarization_locked(self, session_id: str):
         try:
             # 1. Check if we need to summarize
             msg_count = self.db.get_message_count_since_last_summary(session_id)
@@ -74,4 +87,3 @@ class MemorySummarizer:
 
         except Exception as e:
             logger.error(f"Error in background summarization process: {e}")
-

@@ -10,6 +10,7 @@ from src.memory.summarizer import MemorySummarizer
 async def test_real_memory_summarization(tmp_path):
     # Determine base URL
     ollama_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
+    model_name = os.getenv("OLLAMA_MODEL", "ornith-1.5:9b")
     
     # Check if Ollama is accessible
     import httpx
@@ -18,6 +19,11 @@ async def test_real_memory_summarization(tmp_path):
             resp = await client.get(f"{ollama_url}/api/tags")
             if resp.status_code != 200:
                 pytest.skip("Ollama is not responding")
+            available_models = {
+                model.get("name") for model in resp.json().get("models", [])
+            }
+            if model_name not in available_models:
+                pytest.skip(f"Configured live-test model {model_name} is not installed")
     except Exception:
         pytest.skip("Ollama is not accessible")
 
@@ -26,7 +32,6 @@ async def test_real_memory_summarization(tmp_path):
     db_manager = SQLiteSessionManager(db_file)
     
     # Init client, using a fast model if available or fallback
-    model_name = os.getenv("OLLAMA_MODEL", "qwen3:8b")
     llm_client = OllamaClient(ollama_url, model=model_name)
     
     # Init summarizer with low threshold to quickly trigger 
@@ -50,6 +55,7 @@ async def test_real_memory_summarization(tmp_path):
     assert summary is not None
     assert summary != ""
     assert len(summary) > 20
+    assert "Рекс" in summary
     
     # Since LLM output varies, we just print it. When pytest runs, we'll see it in stdout if we use -s.
     print(f"\n[LLM Generated Summary]:\n{summary}\n")
@@ -64,5 +70,6 @@ async def test_real_memory_summarization(tmp_path):
     assert new_summary is not None
     assert len(new_summary) > 20
     assert new_summary != summary # should be updated with new context
+    assert "Рекс" in new_summary
     
     print(f"\n[Updated LLM Generated Summary]:\n{new_summary}\n")

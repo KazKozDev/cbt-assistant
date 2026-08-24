@@ -102,6 +102,14 @@ const UI_TRANSLATIONS = {
         language_title: 'Язык',
         language_ru: 'Русский',
         language_en: 'English',
+        ollama_model_title: 'Модель Ollama',
+        ollama_model_label: 'Модель для чата',
+        ollama_model_loading: 'Загрузка моделей…',
+        ollama_model_empty: 'На сервере Ollama нет установленных моделей',
+        ollama_model_unavailable: 'Текущая модель недоступна на сервере',
+        ollama_model_load_error: 'Не удалось получить список моделей с сервера Ollama',
+        ollama_model_save_error: 'Не удалось переключить модель',
+        ollama_model_saved: 'Выбрана модель: {model}',
         tts_settings_title: 'Microsoft TTS',
         tts_voice_ru_label: 'Русский голос',
         tts_voice_en_label: 'English voice',
@@ -229,6 +237,14 @@ const UI_TRANSLATIONS = {
         language_title: 'Language',
         language_ru: 'Russian',
         language_en: 'English',
+        ollama_model_title: 'Ollama model',
+        ollama_model_label: 'Chat model',
+        ollama_model_loading: 'Loading models…',
+        ollama_model_empty: 'No installed models found on the Ollama server',
+        ollama_model_unavailable: 'The current model is unavailable on the server',
+        ollama_model_load_error: 'Could not load models from the Ollama server',
+        ollama_model_save_error: 'Could not switch the model',
+        ollama_model_saved: 'Selected model: {model}',
         tts_settings_title: 'Microsoft TTS',
         tts_voice_ru_label: 'Russian voice',
         tts_voice_en_label: 'English voice',
@@ -1505,6 +1521,86 @@ window.saveSosPlan = saveSosPlan;
 
 /* === Notifications === */
 let _notifTimers = [];
+let _activeOllamaModel = '';
+
+function setOllamaModelStatus(message, isError) {
+    const status = document.getElementById('ollamaModelStatus');
+    if (!status) return;
+    status.textContent = message || '';
+    status.classList.toggle('error', Boolean(isError));
+}
+
+async function loadOllamaModels() {
+    const select = document.getElementById('ollamaModelSelect');
+    const refresh = document.getElementById('refreshOllamaModels');
+    if (!select) return;
+
+    select.disabled = true;
+    if (refresh) refresh.disabled = true;
+    select.innerHTML = '<option>' + t('ollama_model_loading') + '</option>';
+    setOllamaModelStatus('', false);
+
+    try {
+        const response = await fetch(API + '/api/models');
+        if (!response.ok) throw new Error('HTTP ' + response.status);
+        const data = await response.json();
+        const models = Array.isArray(data.models) ? data.models : [];
+        _activeOllamaModel = data.selected_model || '';
+        select.innerHTML = '';
+
+        models.forEach(function (model) {
+            if (!model || !model.name) return;
+            const option = document.createElement('option');
+            option.value = model.name;
+            option.textContent = model.name;
+            option.selected = model.name === _activeOllamaModel;
+            select.appendChild(option);
+        });
+
+        if (!models.length) {
+            const option = document.createElement('option');
+            option.textContent = t('ollama_model_empty');
+            select.appendChild(option);
+            setOllamaModelStatus(t('ollama_model_empty'), true);
+        } else if (_activeOllamaModel && !models.some(function (model) { return model.name === _activeOllamaModel; })) {
+            const option = document.createElement('option');
+            option.value = _activeOllamaModel;
+            option.textContent = _activeOllamaModel + ' — ' + t('ollama_model_unavailable');
+            option.disabled = true;
+            option.selected = true;
+            select.prepend(option);
+            setOllamaModelStatus(t('ollama_model_unavailable'), true);
+        }
+        select.disabled = models.length === 0;
+    } catch (error) {
+        select.innerHTML = '<option>' + t('ollama_model_load_error') + '</option>';
+        setOllamaModelStatus(t('ollama_model_load_error'), true);
+    } finally {
+        if (refresh) refresh.disabled = false;
+    }
+}
+window.loadOllamaModels = loadOllamaModels;
+
+async function saveOllamaModelSelection() {
+    const select = document.getElementById('ollamaModelSelect');
+    const selectedModel = select && !select.disabled ? select.value : '';
+    if (!selectedModel || selectedModel === _activeOllamaModel) return true;
+
+    try {
+        const response = await fetch(API + '/api/settings/model', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ model: selectedModel })
+        });
+        if (!response.ok) throw new Error('HTTP ' + response.status);
+        _activeOllamaModel = selectedModel;
+        setOllamaModelStatus(t('ollama_model_saved').replace('{model}', selectedModel), false);
+        return true;
+    } catch (error) {
+        setOllamaModelStatus(t('ollama_model_save_error'), true);
+        return false;
+    }
+}
 
 function openNotifModal() {
     const s = JSON.parse(localStorage.getItem('notifSettings') || '{}');
@@ -1514,10 +1610,12 @@ function openNotifModal() {
     document.getElementById('notifEveningTime').value = s.eveningTime || '21:00';
     populateTtsVoiceControls();
     openModal('notifModal');
+    loadOllamaModels();
 }
 window.openNotifModal = openNotifModal;
 
-function saveNotifSettings() {
+async function saveNotifSettings() {
+    if (!await saveOllamaModelSelection()) return;
     const s = {
         morning: document.getElementById('notifMorning').checked,
         morningTime: document.getElementById('notifMorningTime').value,

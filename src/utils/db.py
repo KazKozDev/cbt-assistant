@@ -1,4 +1,5 @@
 import sqlite3
+import json
 from datetime import datetime
 from pathlib import Path
 
@@ -122,7 +123,17 @@ class SQLiteSessionManager:
                     updated_at TEXT,
                     FOREIGN KEY(session_id) REFERENCES sessions(id)
                 )
-            """
+                """
+            )
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS session_profiles (
+                    session_id TEXT PRIMARY KEY,
+                    profile_json TEXT NOT NULL,
+                    updated_at TEXT,
+                    FOREIGN KEY(session_id) REFERENCES sessions(id)
+                )
+                """
             )
             conn.execute(
                 "CREATE INDEX IF NOT EXISTS idx_thought_session ON thought_records(session_id)"
@@ -167,6 +178,13 @@ class SQLiteSessionManager:
             sum_row = cursor.fetchone()
             summary = sum_row["summary"] if sum_row else None
 
+            cursor.execute(
+                "SELECT profile_json FROM session_profiles WHERE session_id = ?",
+                (session_id,),
+            )
+            profile_row = cursor.fetchone()
+            profile = json.loads(profile_row["profile_json"]) if profile_row else {}
+
             return {
                 "id": session_id,
                 "created_at": session["created_at"] if session else now,
@@ -174,6 +192,7 @@ class SQLiteSessionManager:
                 "mood_log": mood_log,
                 "thought_records": thought_records,
                 "summary": summary,
+                "profile_memory": profile,
             }
 
     def add_message(self, session_id: str, role: str, content: str):
@@ -412,6 +431,52 @@ class SQLiteSessionManager:
                 summary=excluded.summary, last_summarized_msg_id=excluded.last_summarized_msg_id, updated_at=excluded.updated_at
                 """,
                 (session_id, new_summary, max_id, now)
+            )
+            conn.commit()
+
+    def get_profile_memory(self, session_id: str) -> dict:
+        with self._get_conn() as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                "SELECT profile_json FROM session_profiles WHERE session_id = ?",
+                (session_id,),
+            )
+            row = cursor.fetchone()
+            if not row:
+                return {}
+            try:
+                return json.loads(row["profile_json"])
+            except (TypeError, json.JSONDecodeError):
+                return {}
+
+    def save_profile_memory(self, session_id: str, profile: dict) -> None:
+        now = datetime.now().isoformat()
+        serialized = json.dumps(profile, ensure_ascii=False, sort_keys=True)
+        with self._get_conn() as conn:
+            conn.execute(
+                "INSERT OR IGNORE INTO sessions (id, created_at) VALUES (?, ?)",
+                (session_id, now),
+            )
+            conn.execute(
+                """
+                INSERT INTO session_profiles (session_id, profile_json, updated_at)
+                VALUES (?, ?, ?)
+                ON CONFLICT(session_id) DO UPDATE SET
+                    profile_json=excluded.profile_json,
+                    updated_at=excluded.updated_at
+                """,
+                (session_id, serialized, now),
+            )
+            conn.commit()
+
+    def clear_memory(self, session_id: str) -> None:
+        """Remove durable profile and summary while preserving the chat transcript."""
+        with self._get_conn() as conn:
+            conn.execute(
+                "DELETE FROM session_profiles WHERE session_id = ?", (session_id,)
+            )
+            conn.execute(
+                "DELETE FROM session_summaries WHERE session_id = ?", (session_id,)
             )
             conn.commit()
 

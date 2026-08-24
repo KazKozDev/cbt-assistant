@@ -706,6 +706,19 @@
                 </div>
             </div>
             <div class="settings-section">
+                <div class="settings-section-label" data-i18n="ollama_model_title">Модель Ollama</div>
+                <div class="settings-field">
+                    <label class="settings-field-label" for="ollamaModelSelect" data-i18n="ollama_model_label">Модель для чата</label>
+                    <div class="settings-field-row">
+                        <select id="ollamaModelSelect" class="settings-select" disabled>
+                            <option data-i18n="ollama_model_loading">Загрузка моделей…</option>
+                        </select>
+                        <button type="button" class="settings-preview-btn" id="refreshOllamaModels" onclick="loadOllamaModels()" data-i18n="refresh">Обновить</button>
+                    </div>
+                    <div class="settings-field-status" id="ollamaModelStatus" aria-live="polite"></div>
+                </div>
+            </div>
+            <div class="settings-section">
                 <div class="settings-section-label" data-i18n="tts_settings_title">Microsoft TTS</div>
                 <div class="settings-voice-grid">
                     <div class="settings-field">
@@ -862,7 +875,7 @@
         </div>
     </div>
 
-    <script src="js/ui.js?v=17"></script>
+    <script src="js/ui.js?v=18"></script>
     <script src="js/report.js?v=2"></script>
     <script src="js/chat_manager.js?v=4"></script>
     <script src="js/cbt_tools.js?v=13"></script>

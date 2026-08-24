@@ -13,7 +13,7 @@ APP_PORT="8000"
 APP_URL="http://127.0.0.1:$APP_PORT"
 HEALTH_URL="$APP_URL/api/health"
 OLLAMA_URL="${OLLAMA_BASE_URL:-http://127.0.0.1:11434}"
-CHAT_MODEL="${CBT_ASSISTANT_CHAT_MODEL:-qwen3:8b}"
+CHAT_MODEL="${CBT_ASSISTANT_CHAT_MODEL:-ornith-1.5:9b}"
 EMBED_MODEL="qwen3-embedding:4b"
 NO_PAUSE="${CBT_ASSISTANT_NO_PAUSE:-0}"
 
@@ -151,7 +151,7 @@ release_app_port() {
     local attempt
 
     listener_pids="$(lsof -tiTCP:"$APP_PORT" -sTCP:LISTEN 2>/dev/null || true)"
-    [ -n "$listener_pids" ] || return
+    [ -n "$listener_pids" ] || return 0
 
     log "Port $APP_PORT is busy. Stopping its current listener..."
     for listener_pid in $listener_pids; do

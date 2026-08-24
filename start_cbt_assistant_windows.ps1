@@ -16,7 +16,7 @@ $AppPort = 8000
 $AppUrl = "http://127.0.0.1:$AppPort"
 $HealthUrl = "$AppUrl/api/health"
 $OllamaUrl = if ($env:OLLAMA_BASE_URL) { $env:OLLAMA_BASE_URL.TrimEnd("/") } else { "http://127.0.0.1:11434" }
-$ChatModel = if ($env:CBT_ASSISTANT_CHAT_MODEL) { $env:CBT_ASSISTANT_CHAT_MODEL } else { "qwen3:8b" }
+$ChatModel = if ($env:CBT_ASSISTANT_CHAT_MODEL) { $env:CBT_ASSISTANT_CHAT_MODEL } else { "ornith-1.5:9b" }
 $EmbedModel = "qwen3-embedding:4b"
 
 function Write-Step {

@@ -26,6 +26,11 @@ from src.utils.db import SQLiteSessionManager  # noqa: E402
 from src.rag.knowledge_base import SemanticRAG  # noqa: E402
 from src.prompts.templates import PromptManager  # noqa: E402
 from src.memory.summarizer import MemorySummarizer  # noqa: E402
+from src.memory.profile import (  # noqa: E402
+    extract_profile_updates,
+    has_profile_updates,
+    merge_profiles,
+)
 from src import __version__  # noqa: E402
 
 # ─── Configuration ───────────────────────────────────────────────
@@ -36,8 +41,10 @@ CONFIG_DIR = Path(__file__).parent.parent / "config"
 with open(CONFIG_DIR / "model_config.yaml", "r", encoding="utf-8") as f:
     model_config = yaml.safe_load(f)["models"]
 
-OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", model_config["qwen"]["model_name"])
-EMBED_MODEL = model_config["embeddings"]["model_name"]
+DEFAULT_OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", model_config["qwen"]["model_name"])
+EMBED_MODEL = os.getenv(
+    "RAG_EMBED_MODEL", model_config["embeddings"]["model_name"]
+)
 LLM_OPTIONS = {
     "temperature": model_config["qwen"]["temperature"],
     "top_p": model_config["qwen"]["top_p"],
@@ -48,10 +55,43 @@ KNOWLEDGE_BASE_DIR = Path(__file__).parent.parent / "knowledge_base"
 DATA_DIR = Path(__file__).parent.parent / "data"
 DATA_DIR.mkdir(exist_ok=True)
 FRONTEND_DIR = Path(__file__).parent.parent / "frontend"
+MODEL_SETTINGS_PATH = DATA_DIR / "model_settings.json"
+
+
+def load_selected_model() -> str:
+    """Restore the model selected in the UI, falling back to startup config."""
+    try:
+        saved = json.loads(MODEL_SETTINGS_PATH.read_text(encoding="utf-8"))
+        model = saved.get("chat_model")
+        if isinstance(model, str) and model.strip():
+            return model.strip()
+    except (OSError, ValueError, TypeError):
+        pass
+    return DEFAULT_OLLAMA_MODEL
+
+
+def persist_selected_model(model: str) -> None:
+    """Persist a UI model choice without modifying repository configuration."""
+    temporary_path = MODEL_SETTINGS_PATH.with_suffix(".tmp")
+    temporary_path.write_text(
+        json.dumps({"chat_model": model}, ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+    )
+    temporary_path.replace(MODEL_SETTINGS_PATH)
+
+
+OLLAMA_MODEL = load_selected_model()
 
 # ─── Component Initialization ─────────────────────────────────────
 llm_client = OllamaClient(OLLAMA_BASE_URL, OLLAMA_MODEL)
-kb = SemanticRAG(KNOWLEDGE_BASE_DIR, OLLAMA_BASE_URL, EMBED_MODEL)
+kb = SemanticRAG(
+    KNOWLEDGE_BASE_DIR,
+    OLLAMA_BASE_URL,
+    EMBED_MODEL,
+    cache_path=DATA_DIR / "rag_index.npz",
+    trace_path=DATA_DIR / "rag_traces.jsonl",
+    score_threshold=float(os.getenv("RAG_SCORE_THRESHOLD", "0.35")),
+)
 sessions = SQLiteSessionManager(DATA_DIR / "cbt_sessions.db")
 prompt_manager = PromptManager(CONFIG_DIR / "prompts.yaml")
 summarizer = MemorySummarizer(sessions, llm_client)
@@ -59,9 +99,11 @@ summarizer = MemorySummarizer(sessions, llm_client)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup: load and embed knowledge base
     await kb.load_and_embed()
-    yield
+    try:
+        yield
+    finally:
+        await summarizer.close()
 
 
 # ─── FastAPI App ─────────────────────────────────────────────────
@@ -93,6 +135,10 @@ class TTSRequest(BaseModel):
     text: str
     language: str = "en"
     voice: str | None = None
+
+
+class ModelSelectionRequest(BaseModel):
+    model: str
 
 
 class ThoughtRecordRequest(BaseModel):
@@ -237,144 +283,195 @@ def get_tts_voice(language: str, voice: str | None = None) -> str:
     return "ru-RU-SvetlanaNeural"
 
 
+def serialize_rag_context(results: list[dict], trace: dict) -> list[dict]:
+    return [
+        {
+            "chunk_id": item["chunk"]["chunk_id"],
+            "document_id": item["chunk"]["document_id"],
+            "source": item["chunk"]["source"],
+            "title": item["chunk"]["title"],
+            "section_path": item["chunk"]["section_path"],
+            "score": round(item["score"], 4),
+            "index_version": trace["index_version"],
+        }
+        for item in results
+    ]
+
+
+def requires_grounded_clinical_answer(message: str) -> bool:
+    normalized = message.casefold()
+    clinical_terms = (
+        "тревог", "депресс", "бессон", "сон", "паник", "эмоц", "псих",
+        "самоповреж", "суицид", "терап", "кпт", "cbt", "anxiety", "depression",
+        "insomnia", "sleep", "panic", "mental health", "self-harm", "suicid",
+    )
+    advice_terms = (
+        "что делать", "как ", "техника", "упражнен", "протокол", "совет",
+        "леч", "поможет", "should i", "what should", "how ", "exercise",
+        "protocol", "treat", "therapy", "help with",
+    )
+    return any(term in normalized for term in clinical_terms) and any(
+        term in normalized for term in advice_terms
+    )
+
+
+def grounded_abstention(language: str) -> str:
+    if language == "en":
+        return (
+            "I couldn't find sufficiently relevant support for a specific answer in the local "
+            "CBT knowledge base, so I won't invent a technique or clinical recommendation. "
+            "You can rephrase the question, or discuss it with a qualified professional."
+        )
+    return (
+        "В локальной базе КПТ не нашлось достаточно релевантной опоры для конкретного ответа, "
+        "поэтому я не буду придумывать технику или клиническую рекомендацию. Можно уточнить "
+        "вопрос или обсудить его с квалифицированным специалистом."
+    )
+
+
+def ensure_rag_citations(content: str, context_used: list[dict], language: str) -> str:
+    """Guarantee that a grounded answer exposes only citations from retrieved context."""
+    if not context_used or any(
+        f"[KB:{item['chunk_id']}]" in content for item in context_used
+    ):
+        return content
+    label = "Retrieved evidence" if language == "en" else "Найденная опора"
+    citations = ", ".join(
+        f"[KB:{item['chunk_id']}] ({item['source']})" for item in context_used
+    )
+    return f"{content.rstrip()}\n\n{label}: {citations}"
+
+
+async def prepare_chat_messages(
+    message: str, session_id: str, language: str
+) -> tuple[list[dict], list[dict], dict]:
+    """The single retrieval and prompt-assembly path used by every chat transport."""
+    profile_updates = extract_profile_updates(message)
+    if has_profile_updates(profile_updates):
+        current_profile = sessions.get_profile_memory(session_id)
+        sessions.save_profile_memory(
+            session_id, merge_profiles(current_profile, profile_updates)
+        )
+    retrieval = await kb.search_with_trace(message, top_k=3)
+    context = retrieval["results"]
+    trace = retrieval["trace"]
+    trace["must_abstain"] = (
+        not context and requires_grounded_clinical_answer(message)
+    )
+    session = sessions.get_or_create(session_id)
+    system_prompt = prompt_manager.build_system_prompt(
+        context,
+        session.get("mood_log"),
+        session.get("thought_records"),
+        session.get("summary"),
+        retrieval_status=trace["status"],
+        profile_memory=session.get("profile_memory"),
+    )
+    system_prompt = f"{system_prompt}\n\n{build_language_instruction(language)}"
+    messages = [{"role": "system", "content": system_prompt}]
+    messages.extend(
+        {"role": msg["role"], "content": msg["content"]}
+        for msg in sessions.get_history(session_id)
+    )
+    messages.append({"role": "user", "content": message})
+    return messages, serialize_rag_context(context, trace), trace
+
+
+def execute_app_tool(session_id: str, tool_call: dict) -> tuple[str, dict | None]:
+    function = tool_call.get("function", {})
+    name = function.get("name")
+    args = function.get("arguments", {})
+    if name == "get_user_sleep_history":
+        return json.dumps(
+            sessions.get_sleep_logs(session_id, limit=args.get("days", 14)),
+            ensure_ascii=False,
+        ), None
+    if name == "get_user_test_results":
+        return json.dumps(sessions.get_tests(session_id), ensure_ascii=False), None
+    if name == "get_user_activities":
+        return json.dumps(
+            sessions.get_activities(session_id, limit=30), ensure_ascii=False
+        ), None
+    if name == "add_user_activity":
+        text = args.get("activity_text", "")
+        return f"Activity queued in the interface: {text}", {
+            "type": "add_activity",
+            "text": text,
+        }
+    if name == "start_breathing":
+        return "Breathing exercise opened in the interface.", {"type": "start_breathing"}
+    if name == "recommend_test":
+        test_type = args.get("test_type", "PHQ-9")
+        return f"The {test_type} test was opened in the interface.", {
+            "type": "open_test",
+            "test_type": test_type,
+        }
+    return f"Error: Unknown tool {name}", None
+
+
 @app.post("/api/chat")
 async def chat(req: ChatRequest):
-    session = sessions.get_or_create(req.session_id)
-    system_prompt = prompt_manager.build_system_prompt(
-        [], session.get("mood_log"), session.get("thought_records"), session.get("summary")
-    )
-    system_prompt = f"{system_prompt}\n\n{build_language_instruction(req.language)}"
-
-    messages = [{"role": "system", "content": system_prompt}]
-    for msg in sessions.get_history(req.session_id):
-        messages.append({"role": msg["role"], "content": msg["content"]})
-    messages.append({"role": "user", "content": req.message})
-
-    available_tools = [kb.get_tool_schema()] + get_user_data_tools()
-
     try:
-        while True:
+        messages, context_used, rag_trace = await prepare_chat_messages(
+            req.message, req.session_id, req.language
+        )
+        if rag_trace["must_abstain"]:
+            content = grounded_abstention(req.language)
+            sessions.add_message(req.session_id, "user", req.message)
+            sessions.add_message(req.session_id, "assistant", content)
+            await summarizer.maybe_summarize(req.session_id)
+            return {
+                "response": content,
+                "context_used": [],
+                "rag_trace": {
+                    "trace_id": rag_trace["trace_id"],
+                    "status": "abstained",
+                    "latency_ms": rag_trace["latency_ms"],
+                    "index_version": rag_trace["index_version"],
+                },
+                "session_id": req.session_id,
+                "client_events": [],
+            }
+        client_events = []
+        for _tool_round in range(4):
             resp = await llm_client.chat(
-                messages, options=LLM_OPTIONS, tools=available_tools
+                messages, options=LLM_OPTIONS, tools=get_user_data_tools()
             )
             tool_calls = resp.get("tool_calls", [])
             content = resp.get("content", "")
-
             if tool_calls:
                 messages.append(
                     {"role": "assistant", "content": content, "tool_calls": tool_calls}
                 )
-
                 for tc in tool_calls:
-                    fn_name = tc.get("function", {}).get("name")
-                    args = tc.get("function", {}).get("arguments", {})
-
-                    if fn_name == "search_cbt_knowledge":
-                        query = args.get("query", "")
-                        results = await kb.search(query, top_k=3)
-                        tool_res_str = f"Found {len(results)} results:\n"
-                        for r in results:
-                            tool_res_str += (
-                                f"- [{r['chunk']['title']}] {r['chunk']['content']}\n"
-                            )
-
-                        messages.append(
-                            {"role": "tool", "content": tool_res_str, "name": fn_name}
-                        )
-                    elif fn_name == "get_user_sleep_history":
-                        days = args.get("days", 14)
-                        sleep_logs = sessions.get_sleep_logs(req.session_id, limit=days)
-                        messages.append(
-                            {
-                                "role": "tool",
-                                "content": json.dumps(sleep_logs, ensure_ascii=False),
-                                "name": fn_name,
-                            }
-                        )
-                    elif fn_name == "get_user_test_results":
-                        tests = sessions.get_tests(req.session_id)
-                        messages.append(
-                            {
-                                "role": "tool",
-                                "content": json.dumps(tests, ensure_ascii=False),
-                                "name": fn_name,
-                            }
-                        )
-                    elif fn_name == "get_user_activities":
-                        acts = sessions.get_activities(req.session_id, limit=30)
-                        messages.append(
-                            {
-                                "role": "tool",
-                                "content": json.dumps(acts, ensure_ascii=False),
-                                "name": fn_name,
-                            }
-                        )
-                    elif fn_name == "add_user_activity":
-                        # For now, simulate success but tell the assistant it needs to ask the UI to do it
-                        act_text = args.get("activity_text", "")
-                        messages.append(
-                            {
-                                "role": "tool",
-                                "content": f"Successfully added activity: {act_text}. Note: This will be sent as a client command in the final response.",
-                                "name": fn_name,
-                            }
-                        )
-                    elif fn_name == "start_breathing":
-                        messages.append(
-                            {
-                                "role": "tool",
-                                "content": "Successfully triggered the breathing exercise on the user's interface.",
-                                "name": fn_name,
-                            }
-                        )
-                    elif fn_name == "recommend_test":
-                        test_type = args.get("test_type", "PHQ-9")
-                        messages.append(
-                            {
-                                "role": "tool",
-                                "content": f"Successfully recommended the {test_type} test. The interface will open the test modal.",
-                                "name": fn_name,
-                            }
-                        )
-                    else:
-                        messages.append(
-                            {
-                                "role": "tool",
-                                "content": f"Error: Unknown tool {fn_name}",
-                                "name": fn_name,
-                            }
-                        )
+                    tool_content, event = execute_app_tool(req.session_id, tc)
+                    if event:
+                        client_events.append(event)
+                    messages.append(
+                        {
+                            "role": "tool",
+                            "content": tool_content,
+                            "name": tc.get("function", {}).get("name"),
+                        }
+                    )
             else:
+                content = ensure_rag_citations(content, context_used, req.language)
                 sessions.add_message(req.session_id, "user", req.message)
                 sessions.add_message(req.session_id, "assistant", content)
-                # Check if there were any tool calls in the history of this request
-                client_events = []
-                for msg in messages:
-                    if msg.get("role") == "assistant" and "tool_calls" in msg:
-                        for tc in msg["tool_calls"]:
-                            fc_name = tc.get("function", {}).get("name")
-                            if fc_name == "add_user_activity":
-                                client_events.append({
-                                    "type": "add_activity",
-                                    "text": tc.get("function", {}).get("arguments", {}).get("activity_text", "")
-                                })
-                            elif fc_name == "start_breathing":
-                                client_events.append({
-                                    "type": "start_breathing"
-                                })
-                            elif fc_name == "recommend_test":
-                                client_events.append({
-                                    "type": "open_test",
-                                    "test_type": tc.get("function", {}).get("arguments", {}).get("test_type", "PHQ-9")
-                                })
-
+                await summarizer.maybe_summarize(req.session_id)
                 return {
                     "response": content,
-                    "context_used": [],
+                    "context_used": context_used,
+                    "rag_trace": {
+                        "trace_id": rag_trace["trace_id"],
+                        "status": rag_trace["status"],
+                        "latency_ms": rag_trace["latency_ms"],
+                        "index_version": rag_trace["index_version"],
+                    },
                     "session_id": req.session_id,
-                    "client_events": client_events
+                    "client_events": client_events,
                 }
-
+        raise RuntimeError("Model exceeded the maximum of 4 tool rounds")
     except Exception as e:
         raise HTTPException(500, f"Error communicating with model: {str(e)}")
 
@@ -383,50 +480,41 @@ async def chat(req: ChatRequest):
 async def chat_stream(req: ChatRequest):
     from fastapi.responses import StreamingResponse
 
-    session = sessions.get_or_create(req.session_id)
-    system_prompt = prompt_manager.build_system_prompt(
-        [], session.get("mood_log"), session.get("thought_records")
-    )
-    system_prompt = f"{system_prompt}\n\n{build_language_instruction(req.language)}"
-
-    messages = [{"role": "system", "content": system_prompt}]
-    for msg in sessions.get_history(req.session_id):
-        messages.append({"role": msg["role"], "content": msg["content"]})
-    messages.append({"role": "user", "content": req.message})
-
-    # Available tools
-    available_tools = [kb.get_tool_schema()] + get_user_data_tools()
+    try:
+        messages, context_used, rag_trace = await prepare_chat_messages(
+            req.message, req.session_id, req.language
+        )
+    except Exception as exc:
+        raise HTTPException(503, f"RAG retrieval failed: {exc}") from exc
 
     async def generate():
         nonlocal messages
-
-        while True:
+        yield f"data: {json.dumps({'context_used': context_used, 'rag_trace': rag_trace['trace_id']})}\n\n"
+        if rag_trace["must_abstain"]:
+            content = grounded_abstention(req.language)
+            sessions.add_message(req.session_id, "user", req.message)
+            sessions.add_message(req.session_id, "assistant", content)
+            await summarizer.maybe_summarize(req.session_id)
+            yield f"data: {json.dumps({'token': content})}\n\n"
+            yield f"data: {json.dumps({'done': True, 'full_response': content, 'context_used': []})}\n\n"
+            return
+        for _tool_round in range(4):
             full_response = ""
             tool_calls = []
-
             try:
-                # 1. Ask model
                 async for chunk in llm_client.chat_stream(
-                    messages, options=LLM_OPTIONS, tools=available_tools
+                    messages, options=LLM_OPTIONS, tools=get_user_data_tools()
                 ):
                     msg = chunk.get("message", {})
-
-                    # Ollama streams tool calls too
-                    if "tool_calls" in msg and msg["tool_calls"]:
-                        # Merge tool calls from stream (often sent in one piece anyway, but let's be safe)
+                    if msg.get("tool_calls"):
                         tool_calls = msg["tool_calls"]
-
                     token = msg.get("content", "")
                     if token:
                         full_response += token
-                        # Only yield to frontend if it's not an empty tool trigger
                         if token.strip():
                             yield f"data: {json.dumps({'token': token})}\n\n"
-
                     if chunk.get("done"):
-                        # If there were tool calls, we don't end the stream yet!
                         if tool_calls:
-                            # 2. Add assistant's tool call intent to history
                             messages.append(
                                 {
                                     "role": "assistant",
@@ -434,98 +522,29 @@ async def chat_stream(req: ChatRequest):
                                     "tool_calls": tool_calls,
                                 }
                             )
-
-                            # 3. Execute tools
                             for tc in tool_calls:
                                 fn_name = tc.get("function", {}).get("name")
-                                args = tc.get("function", {}).get("arguments", {})
-
-                                if fn_name == "search_cbt_knowledge":
-                                    query = args.get("query", "")
-                                    print(f"🔧 Model called tool: {fn_name}('{query}')")
-                                    # Yield a special event to frontend showing tool action
-                                    yield f"data: {json.dumps({'tool_call': fn_name, 'query': query})}\n\n"
-
-                                    # Search KB
-                                    results = await kb.search(query, top_k=3)
-                                    tool_res_str = f"Found {len(results)} results:\n"
-                                    for r in results:
-                                        tool_res_str += f"- [{r['chunk']['title']}] {r['chunk']['content']}\n"
-
-                                    messages.append(
-                                        {
-                                            "role": "tool",
-                                            "content": tool_res_str,
-                                            "name": fn_name,
-                                        }
-                                    )
-                                elif fn_name == "get_user_sleep_history":
-                                    days = args.get("days", 14)
-                                    print(f"🔧 Model called tool: {fn_name}('{days}')")
-                                    yield f"data: {json.dumps({'tool_call': fn_name, 'query': f'Сон за {days} дней'})}\n\n"
-                                    sleep_logs = sessions.get_sleep_logs(
-                                        req.session_id, limit=days
-                                    )
-                                    messages.append(
-                                        {
-                                            "role": "tool",
-                                            "content": json.dumps(
-                                                sleep_logs, ensure_ascii=False
-                                            ),
-                                            "name": fn_name,
-                                        }
-                                    )
-                                elif fn_name == "get_user_test_results":
-                                    print(f"🔧 Model called tool: {fn_name}()")
-                                    yield f"data: {json.dumps({'tool_call': fn_name, 'query': 'Результаты тестов'})}\n\n"
-                                    tests = sessions.get_tests(req.session_id)
-                                    messages.append(
-                                        {
-                                            "role": "tool",
-                                            "content": json.dumps(
-                                                tests, ensure_ascii=False
-                                            ),
-                                            "name": fn_name,
-                                        }
-                                    )
-                                elif fn_name == "get_user_activities":
-                                    print(f"🔧 Model called tool: {fn_name}()")
-                                    yield f"data: {json.dumps({'tool_call': fn_name, 'query': 'Активности'})}\n\n"
-                                    acts = sessions.get_activities(
-                                        req.session_id, limit=30
-                                    )
-                                    messages.append(
-                                        {
-                                            "role": "tool",
-                                            "content": json.dumps(
-                                                acts, ensure_ascii=False
-                                            ),
-                                            "name": fn_name,
-                                        }
-                                    )
-                                else:
-                                    messages.append(
-                                        {
-                                            "role": "tool",
-                                            "content": f"Error: Unknown tool {fn_name}",
-                                            "name": fn_name,
-                                        }
-                                    )
-
-                            # Break out of loop to run llm_client.chat_stream AGAIN with tool results
+                                tool_content, _event = execute_app_tool(req.session_id, tc)
+                                yield f"data: {json.dumps({'tool_call': fn_name})}\n\n"
+                                messages.append(
+                                    {"role": "tool", "content": tool_content, "name": fn_name}
+                                )
                             break
-
                         else:
-                            # Standard completion done
                             clean = ContentCleaner.strip_think_tags(full_response)
+                            cited = ensure_rag_citations(clean, context_used, req.language)
+                            citation_suffix = cited[len(clean) :]
+                            if citation_suffix:
+                                yield f"data: {json.dumps({'token': citation_suffix})}\n\n"
                             sessions.add_message(req.session_id, "user", req.message)
-                            sessions.add_message(req.session_id, "assistant", clean)
+                            sessions.add_message(req.session_id, "assistant", cited)
                             await summarizer.maybe_summarize(req.session_id)
-                            yield f"data: {json.dumps({'done': True, 'full_response': clean})}\n\n"
-                            return  # Exit generator completely
+                            yield f"data: {json.dumps({'done': True, 'full_response': cited, 'context_used': context_used})}\n\n"
+                            return
             except Exception as e:
                 yield f"data: {json.dumps({'error': str(e)})}\n\n"
                 return
+        yield f"data: {json.dumps({'error': 'Model exceeded the maximum of 4 tool rounds'})}\n\n"
 
     return StreamingResponse(generate(), media_type="text/event-stream")
 
@@ -634,6 +653,21 @@ async def get_session(session_id: str):
 async def save_session(session_id: str):
     sessions.save_session(session_id)
     return {"status": "saved"}
+
+
+@app.get("/api/memory/{session_id}")
+async def get_memory(session_id: str):
+    return {
+        "session_id": session_id,
+        "profile": sessions.get_profile_memory(session_id),
+        "summary": sessions.get_session_summary(session_id),
+    }
+
+
+@app.delete("/api/memory/{session_id}")
+async def clear_memory(session_id: str):
+    sessions.clear_memory(session_id)
+    return {"status": "cleared", "session_id": session_id}
 
 
 # DATA SYNC ENDPOINTS
@@ -859,18 +893,96 @@ async def generate_insights(req: InsightsRequest):
 
 @app.get("/api/knowledge/search")
 async def search_knowledge(q: str, top_k: int = 3):
-    results = await kb.search(q, top_k)
+    try:
+        retrieval = await kb.search_with_trace(q, top_k)
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(503, f"RAG retrieval failed: {exc}") from exc
+    results = retrieval["results"]
+    trace = retrieval["trace"]
     return {
         "query": q,
+        "status": trace["status"],
+        "trace_id": trace["trace_id"],
+        "index_version": trace["index_version"],
+        "embedding_model": trace["embedding_model"],
+        "latency_ms": trace["latency_ms"],
         "results": [
             {
+                "chunk_id": r["chunk"]["chunk_id"],
+                "document_id": r["chunk"]["document_id"],
+                "source": r["chunk"]["source"],
                 "title": r["chunk"]["title"],
-                "score": round(r["score"], 2),
+                "section_path": r["chunk"]["section_path"],
+                "score": round(r["score"], 4),
                 "preview": r["chunk"]["content"][:300],
             }
             for r in results
         ],
     }
+
+
+@app.get("/api/knowledge/status")
+async def knowledge_status():
+    return kb.get_status()
+
+
+async def fetch_ollama_models() -> list[dict]:
+    """Return the models currently installed on the configured Ollama server."""
+    import httpx
+
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            response = await client.get(f"{OLLAMA_BASE_URL}/api/tags")
+            response.raise_for_status()
+    except httpx.HTTPError as exc:
+        raise HTTPException(503, f"Ollama is unavailable: {exc}") from exc
+
+    models = response.json().get("models", [])
+    return sorted(
+        [
+            model
+            for model in models
+            if isinstance(model, dict)
+            and isinstance(model.get("name"), str)
+            and (
+                "capabilities" not in model
+                or "completion" in (model.get("capabilities") or [])
+            )
+        ],
+        key=lambda model: model["name"].lower(),
+    )
+
+
+@app.get("/api/models")
+async def get_ollama_models():
+    models = await fetch_ollama_models()
+    return {
+        "models": models,
+        "selected_model": llm_client.model,
+        "ollama_url": OLLAMA_BASE_URL,
+    }
+
+
+@app.put("/api/settings/model")
+async def select_ollama_model(request: ModelSelectionRequest):
+    model_name = request.model.strip()
+    if not model_name:
+        raise HTTPException(422, "Model name cannot be empty")
+
+    available_models = await fetch_ollama_models()
+    available_names = {model["name"] for model in available_models}
+    if model_name not in available_names:
+        raise HTTPException(400, "The selected model is not installed on this Ollama server")
+
+    try:
+        persist_selected_model(model_name)
+    except OSError as exc:
+        raise HTTPException(500, "Could not save the selected model") from exc
+
+    llm_client.model = model_name
+    return {"status": "ok", "selected_model": model_name}
 
 
 @app.get("/api/health")
@@ -886,12 +998,13 @@ async def health():
         pass
 
     return {
-        "status": "ok",
+        "status": "ok" if ollama_ok and kb.state == "ready" else "degraded",
         "version": __version__,
         "ollama_connected": ollama_ok,
         "ollama_url": OLLAMA_BASE_URL,
-        "model": OLLAMA_MODEL,
+        "model": llm_client.model,
         "knowledge_chunks": len(kb.chunks),
+        "rag": kb.get_status(),
     }
 
 @app.get("/api/report/{session_id}")
@@ -964,23 +1077,41 @@ async def websocket_chat(websocket: WebSocket, session_id: str):
             if data.get("type") == "message":
                 user_msg = data["content"]
 
-                context = await kb.search(user_msg, top_k=3)
-                session = sessions.get_or_create(session_id)
-                system_prompt = prompt_manager.build_system_prompt(
-                    context, session.get("mood_log"), session.get("thought_records"), session.get("summary")
+                try:
+                    messages, context_used, rag_trace = await prepare_chat_messages(
+                        user_msg, session_id, data.get("language", "en")
+                    )
+                except Exception as exc:
+                    await websocket.send_json(
+                        {"type": "error", "content": f"RAG retrieval failed: {exc}"}
+                    )
+                    continue
+
+                await websocket.send_json(
+                    {
+                        "type": "context",
+                        "context_used": context_used,
+                        "rag_trace": rag_trace["trace_id"],
+                    }
                 )
 
-                sessions.add_message(session_id, "user", user_msg)
-                
-                # Fetch recent history
-                history = sessions.get_history(session_id)
-                messages = [{"role": "system", "content": system_prompt}]
-                for msg in history:
-                    messages.append({"role": msg["role"], "content": msg["content"]})
-                # The user message was already added to history, so no need to append again here.
+                if rag_trace["must_abstain"]:
+                    content = grounded_abstention(data.get("language", "en"))
+                    sessions.add_message(session_id, "user", user_msg)
+                    sessions.add_message(session_id, "assistant", content)
+                    await summarizer.maybe_summarize(session_id)
+                    await websocket.send_json(
+                        {
+                            "type": "done",
+                            "content": content,
+                            "context_used": [],
+                            "rag_trace": rag_trace["trace_id"],
+                            "status": "abstained",
+                        }
+                    )
+                    continue
 
                 full_response = ""
-                assistant_reply = ""
                 try:
                     async for chunk in llm_client.chat_stream(
                         messages, options=LLM_OPTIONS
@@ -988,19 +1119,29 @@ async def websocket_chat(websocket: WebSocket, session_id: str):
                         token = chunk.get("message", {}).get("content", "")
                         if token:
                             full_response += token
-                            assistant_reply += token # Accumulate for saving
                             await websocket.send_json(
                                 {"type": "token", "content": token}
                             )
                         if chunk.get("done"):
                             clean = ContentCleaner.strip_think_tags(full_response)
-                            # Save assistant response
-                            sessions.add_message(session_id, "assistant", assistant_reply)
-                            
-                            # Trigger background memory summarization
+                            cited = ensure_rag_citations(
+                                clean, context_used, data.get("language", "en")
+                            )
+                            citation_suffix = cited[len(clean) :]
+                            if citation_suffix:
+                                await websocket.send_json(
+                                    {"type": "token", "content": citation_suffix}
+                                )
+                            sessions.add_message(session_id, "user", user_msg)
+                            sessions.add_message(session_id, "assistant", cited)
                             await summarizer.maybe_summarize(session_id)
                             await websocket.send_json(
-                                {"type": "done", "content": clean}
+                                {
+                                    "type": "done",
+                                    "content": cited,
+                                    "context_used": context_used,
+                                    "rag_trace": rag_trace["trace_id"],
+                                }
                             )
                 except Exception as e:
                     await websocket.send_json({"type": "error", "content": str(e)})

@@ -22,7 +22,7 @@ Start Ollama and pull the required models:
 
 ```bash
 ollama serve
-ollama pull qwen3:8b
+ollama pull ornith-1.5:9b
 ollama pull qwen3-embedding:4b
 ```
 

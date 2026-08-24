@@ -373,6 +373,22 @@ body {
     border-color: rgba(121, 114, 152, 0.7);
 }
 
+.settings-select:disabled {
+    cursor: wait;
+    opacity: 0.7;
+}
+
+.settings-field-status {
+    min-height: 18px;
+    color: var(--gray);
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+.settings-field-status.error {
+    color: #b54b4b;
+}
+
 .settings-preview-btn {
     border: 1px solid var(--border);
     background: var(--panel);
@@ -664,6 +680,43 @@ body {
     display: flex;
     flex-wrap: wrap;
     gap: 6px;
+}
+
+.rag-sources {
+    margin: 4px 52px 18px;
+    padding: 12px 14px;
+    border: 1px solid var(--border, #e2e8f0);
+    border-radius: 12px;
+    background: color-mix(in srgb, var(--card, #fff) 92%, #64748b 8%);
+    color: var(--text, #1e293b);
+    font-size: 12px;
+}
+
+.rag-sources-title {
+    margin-bottom: 7px;
+    font-weight: 700;
+}
+
+.rag-source {
+    display: grid;
+    gap: 2px;
+    margin-top: 7px;
+}
+
+.rag-source-label {
+    line-height: 1.35;
+}
+
+.rag-source code {
+    overflow-wrap: anywhere;
+    color: var(--gray, #64748b);
+    font-size: 11px;
+}
+
+@media (max-width: 600px) {
+    .rag-sources {
+        margin-inline: 12px;
+    }
 }
 
 .article-reader-title {

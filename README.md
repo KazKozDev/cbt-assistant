@@ -28,7 +28,7 @@ start_cbt_assistant.bat
 
 ## Quick start
 
-1. Run the command above. The launcher creates `.venv`, installs the Python dependencies, installs and starts Ollama when needed, downloads `qwen3:8b` and `qwen3-embedding:4b`, releases port `8000`, starts CBT Assistant, waits for `/api/health`, and opens `http://localhost:8000` in your browser.
+1. Run the command above. The launcher creates `.venv`, installs the Python dependencies, installs and starts Ollama when needed, downloads `ornith-1.5:9b` and `qwen3-embedding:4b`, releases port `8000`, starts CBT Assistant, waits for `/api/health`, and opens `http://localhost:8000` in your browser.
 
 2. Start with the chat or open **SOS** for a guided breathing, grounding, muscle-relaxation, or STOP exercise. The interface starts in English; switch to Russian in **Settings** if you prefer.
 
@@ -41,7 +41,16 @@ The first launch takes longer because the Python environment and Ollama models m
 
 ## Run a private CBT chatbot with a local LLM
 
-The chat uses `qwen3:8b` through Ollama by default. Before each answer, the backend retrieves relevant passages from the bundled CBT knowledge base and combines them with recent conversation history, synchronized journal data, and the saved session summary.
+The chat uses [`ornith-1.5:9b`](https://ollama.com/library/ornith-1.5:9b) through Ollama by default. Before each answer, the backend retrieves relevant passages from the bundled CBT knowledge base and combines them with recent conversation history, synchronized journal data, and the saved session summary.
+
+Memory is durable within the browser session identity. Every successful chat turn is written to SQLite, the latest 20 messages are included directly, and a rolling summary is refreshed after every 15 new messages. Explicit personal facts such as “My name is Alice,” “my dog is named Charlie,” names of close people, preferences, location, work, and important priorities are stored immediately in a structured profile instead of waiting for summarization. The profile is injected into REST, SSE, and WebSocket chat as delimited data, not instructions.
+
+The browser keeps its `SESSION_ID` in `localStorage`, so the same profile, transcript, and summary are restored after a page reload or application restart. Clearing browser storage or using a different browser profile creates a different session identity. Inspect or erase the derived profile and summary with:
+
+```text
+GET    /api/memory/{session_id}
+DELETE /api/memory/{session_id}
+```
 
 ```text
 Message → CBT knowledge search → Local Ollama response → Saved session context
@@ -78,20 +87,30 @@ These are short self-regulation aids. The application does not monitor emergenci
 
 The bundled Markdown knowledge base covers clinical CBT guidance, anxiety protocols, insomnia protocols, and psychological skills. At startup, `src/rag/knowledge_base.py` divides these files into sections and requests embeddings from the local `qwen3-embedding:4b` model.
 
-For every chat message, semantic search selects relevant passages before the prompt is sent to the chat model. The same index is available through the API:
+For every chat message, the same deterministic retrieval pipeline selects relevant passages before the prompt is sent to the chat model. This contract is shared by REST, SSE, and WebSocket chat. The model cannot skip retrieval. The same versioned index is available through the API:
 
 ```text
 GET /api/knowledge/search?q=sleep&top_k=3
 ```
 
-The knowledge base grounds retrieval, but it does not guarantee that a generated answer is clinically correct or suitable for an individual user.
+Results carry stable chunk and document IDs, the Markdown source, full section path, index version, similarity score, and a local trace ID. Chat responses expose the selected passages in `context_used`, and the browser shows them below the answer. The model is instructed to cite clinical claims inline as `[KB:chunk_id]`.
+
+The default relevance threshold is `0.35`. When no passage clears it, retrieval returns `no_relevant_context`; the assistant may continue a supportive conversation but must not invent a specific CBT protocol or clinical justification. The knowledge base grounds retrieval, but it does not guarantee that a generated answer is clinically correct or suitable for an individual user.
+
+### RAG engineering contract
+
+- Markdown is split by its complete heading hierarchy and oversized sections are bounded with controlled overlap. The current corpus produces 53 addressable chunks instead of 34 coarse `##` sections.
+- The index is fingerprinted from document content and chunking settings. A matching NumPy index is restored from `data/rag_index.npz`; changed content is embedded in batches and swapped into service only after a complete successful build.
+- A failed first build prevents RAG from reporting ready. If a rebuild fails while an older complete index is in memory, status becomes `degraded` and the previous index remains usable.
+- Each retrieval writes a local trace to the ignored `data/rag_traces.jsonl`: query, candidate and selected chunk IDs, scores, latency, embedding model, threshold, and index version. These traces can contain sensitive query text and must not be shared casually.
+- `GET /api/knowledge/status` reports readiness, index version, model, threshold, cache use, chunk count, and the latest index error.
 
 ## How it works
 
 The browser talks to a FastAPI server running on your computer.<br>
 **RAG** retrieves relevant CBT passages with local Ollama embeddings.<br>
 **Chat** combines those passages with recent history and structured records.<br>
-**Memory** summarizes longer sessions and saves the result in SQLite.<br>
+**Memory** persists recent messages, a structured personal profile, and rolling summaries in SQLite.<br>
 **Tools** connect the conversation to assessments, activities, and guided exercises.
 
 ```text
@@ -112,15 +131,15 @@ Response             Markdown knowledge base
 
 ### Request path
 
-1. **Startup** — FastAPI initializes `data/cbt_sessions.db`, reads `knowledge_base/*.md`, and embeds the knowledge chunks through Ollama.
-2. **Retrieve** — a chat request runs semantic search and selects the most relevant local CBT passages.
-3. **Assemble** — the prompt combines system instructions, retrieved passages, recent messages, synchronized records, and any rolling session summary.
+1. **Startup** — FastAPI initializes `data/cbt_sessions.db`, fingerprints `knowledge_base/*.md`, restores a matching cached index or embeds the complete changed corpus through Ollama.
+2. **Retrieve** — every chat transport runs the same semantic search, relevance threshold, provenance serialization, and local retrieval trace.
+3. **Assemble** — the prompt combines explicitly delimited evidence passages, recent messages, synchronized records, and any rolling session summary. Retrieved text is treated as data, not instructions.
 4. **Generate** — `src/llm/ollama_client.py` sends the request to the configured Ollama model. REST, streaming, or WebSocket responses return to the browser.
-5. **Persist** — messages and structured records are written to SQLite. After the configured threshold, `src/memory/summarizer.py` updates the session summary.
+5. **Persist** — messages and structured records are written to SQLite. Explicit names and personal facts update the durable profile immediately; after the configured threshold, `src/memory/summarizer.py` updates the session summary on every chat transport.
 
 ### Storage
 
-- `data/cbt_sessions.db` stores sessions, messages, mood logs, thought records, sleep logs, assessment results, activities, and summaries.
+- `data/cbt_sessions.db` stores sessions, messages, mood logs, thought records, sleep logs, assessment results, activities, structured personal profiles, and summaries.
 - Browser `localStorage` stores the session identifier and interface-side mood, sleep, activity, assessment, language, reminder, voice, and crisis-plan settings.
 - The default chat, embeddings, knowledge base, and SQLite path run on the machine hosting the application.
 
@@ -146,8 +165,9 @@ Response             Markdown knowledge base
 |---|---|---|
 | App address | `http://localhost:8000` | Browser interface and API; the server binds to `0.0.0.0:8000` |
 | Ollama address | `http://localhost:11434` | Override with `OLLAMA_BASE_URL` |
-| Chat model | `qwen3:8b` | Override with `OLLAMA_MODEL` for manual starts or `CBT_ASSISTANT_CHAT_MODEL` for the launchers |
-| Embedding model | `qwen3-embedding:4b` | Configured in `config/model_config.yaml` |
+| Chat model | `ornith-1.5:9b` | Set the startup default with `OLLAMA_MODEL` / `CBT_ASSISTANT_CHAT_MODEL`, then choose any installed completion model in Settings |
+| Embedding model | `qwen3-embedding:4b` | Override with `RAG_EMBED_MODEL` |
+| RAG score threshold | `0.35` | Override with `RAG_SCORE_THRESHOLD` |
 | Maximum generated tokens | `1024` | `num_predict` sent to Ollama |
 | Temperature | `0.7` | Chat sampling value |
 | Top-p | `0.9` | Chat sampling value |
@@ -158,11 +178,13 @@ Example manual model override:
 
 ```bash
 OLLAMA_BASE_URL=http://localhost:11434 \
-OLLAMA_MODEL=qwen3:8b \
+OLLAMA_MODEL=ornith-1.5:9b \
 python backend/server.py
 ```
 
-The embedding model is not controlled by an environment variable. Change `config/model_config.yaml` if you intentionally replace it.
+Override the embedding model with `RAG_EMBED_MODEL`, or change `config/model_config.yaml` for a repository default. Re-run the retrieval evaluation whenever the embedding model, threshold, chunking, or knowledge content changes.
+
+The model selector requests the current installed-model list from the configured Ollama server. A selection takes effect for new chat requests immediately and is restored on later launches from local app data.
 
 </details>
 
@@ -172,7 +194,7 @@ The embedding model is not controlled by an environment variable. Change `config
 - **macOS 14 or newer** for `start_cbt_assistant.command`.
 - **Windows 10 22H2 or newer** for `start_cbt_assistant.bat` and `start_cbt_assistant_windows.ps1`.
 - **Python 3.10+** and **Ollama** for manual installation on Linux or another supported environment.
-- Enough memory and disk space for `qwen3:8b` and `qwen3-embedding:4b`, or compatible models you configure yourself.
+- Enough memory and disk space for `ornith-1.5:9b` and `qwen3-embedding:4b`, or compatible models you configure yourself.
 - Internet access on the first run to download Python dependencies and Ollama models.
 - A modern browser. Some optional browser features continue to require network access.
 
@@ -191,6 +213,7 @@ The automatic launchers install a local Python 3.12 environment through `uv` whe
 - Printable PDF reports load Chart.js from a CDN when the report window is created.
 - The server binds to `0.0.0.0:8000` and enables permissive CORS. Do not expose it to the public internet or an untrusted network without authentication and restrictive network controls.
 - The application has no user accounts, encryption layer, clinician review, emergency dispatch, or automatic crisis escalation.
+- Personal profile memory is local and session-scoped but is not encrypted. `DELETE /api/memory/{session_id}` removes the derived profile and summary; deleting the transcript is a separate operation.
 - PHQ-9, GAD-7, and Rosenberg results are self-assessment aids, not diagnoses.
 
 Review the code and network behavior before entering sensitive information. A strictly offline deployment requires replacing or disabling external fonts, scripts, speech, and video integrations.
@@ -203,6 +226,7 @@ Review the code and network behavior before entering sensitive information. A st
 - Generated mental health guidance can be incomplete, inappropriate, or incorrect. Prompt safeguards and local retrieval do not make the model clinically reliable.
 - CBT Assistant does not diagnose conditions, prescribe treatment, monitor emergencies, or replace a qualified professional.
 - This is a single-user local application with no authentication or multi-user isolation.
+- Memory follows the browser's locally stored session ID. Clearing browser storage, changing browser profiles, or manually changing that ID starts a separate memory context even if older SQLite rows remain on disk.
 - Privacy is local-first, not fully offline, because optional speech, media, fonts, and CDN assets can contact external services.
 - Model quality and latency depend on the selected Ollama models and local hardware.
 - The embedding model must be available before the knowledge index and chat become usable.
@@ -225,7 +249,7 @@ cd cbt-assistant
 python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install -r requirements.txt
-ollama pull qwen3:8b
+ollama pull ornith-1.5:9b
 ollama pull qwen3-embedding:4b
 python backend/server.py
 ```
@@ -246,7 +270,15 @@ Run the deterministic tests without a live model response:
 python -m pytest -q --ignore=tests/test_real_memory.py
 ```
 
-These tests cover SQLite behavior, prompt construction, mocked retrieval and summarization, API endpoints, and tool execution. Run the live memory integration separately when Ollama and the selected model are available:
+These tests cover SQLite behavior, prompt construction, structural chunking, cache restoration, fail-closed indexing, thresholds, provenance, retrieval metrics, API endpoints, and tool execution. Run the live retrieval regression set against Ollama with:
+
+```bash
+python scripts/evaluate_rag.py --threshold 0.35 --output data/rag_eval_report.json
+```
+
+The versioned cases are in `evals/rag_retrieval.json`. The checked-in baseline contains 18 Russian/English and off-topic cases: Recall@3 `1.0`, MRR `0.9286`, and abstention accuracy `1.0` on `qwen3-embedding:4b`. This small regression set measures retrieval behavior, not clinical correctness.
+
+Run the live memory integration separately when Ollama and the selected model are available:
 
 ```bash
 python -m pytest tests/test_real_memory.py -s

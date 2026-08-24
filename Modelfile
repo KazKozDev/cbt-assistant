@@ -1,11 +1,11 @@
 # Modelfile для КПТ Ассистента
-# Создаёт кастомную модель на основе qwen3:8b с встроенным системным промптом
+# Создаёт кастомную модель на основе ornith-1.5:9b с встроенным системным промптом
 #
 # Использование:
 #   ollama create cbt-assistant -f Modelfile
 #   ollama run cbt-assistant
 
-FROM qwen3:8b
+FROM ornith-1.5:9b
 
 PARAMETER temperature 0.7
 PARAMETER top_p 0.9
