@@ -106,42 +106,15 @@ python backend/server.py
 
 Open `http://localhost:8000`. If Ollama is installed but not running, start `ollama serve` in another terminal first. Linux currently uses this manual path; the repository has no Dockerfile or automatic Linux launcher.
 
-## Local AI requirements and Ollama configuration
+## Limitations
 
-- macOS 14+ for `start_cbt_assistant.command`, or Windows 10 22H2+ for the `.bat` and PowerShell launchers.
-- Python 3.10+, Ollama, a modern browser, and enough memory and disk space for the selected models.
-- Internet access on the first run for Python dependencies and Ollama models. Optional browser media and speech features can also use external services.
+- CBT Assistant is local-first, not fully offline: text-to-speech, browser speech recognition, Google Fonts, CDN scripts, YouTube media, and printable reports may contact external services.
+- The server binds to `0.0.0.0:8000`, enables permissive CORS, and has no authentication, encryption layer, or multi-user isolation. Do not expose it to the public internet or an untrusted network.
+- Chat quality, response time, and memory use depend on the selected Ollama models and local hardware. Chat is unavailable until the embedding model has built or restored the CBT knowledge index.
+- Generated responses and self-assessments can be wrong. The application does not diagnose, monitor emergencies, contact a clinician, dispatch help, or replace professional care.
+- Linux requires manual installation; Docker and an automatic Linux launcher are not included.
 
-| Setting | Default | Override |
-|---|---|---|
-| App | `http://localhost:8000` | Server binds to `0.0.0.0:8000` |
-| Ollama | `http://localhost:11434` | `OLLAMA_BASE_URL` |
-| Chat model | `ornith-1.5:9b` | `OLLAMA_MODEL`, `CBT_ASSISTANT_CHAT_MODEL`, or Settings |
-| Embeddings | `qwen3-embedding:4b` | `RAG_EMBED_MODEL` |
-| RAG threshold | `0.35` | `RAG_SCORE_THRESHOLD` |
-| Data | `data/cbt_sessions.db` | Local SQLite file |
-
-Generation defaults are 1,024 maximum tokens, temperature `0.7`, and top-p `0.9`. See [Architecture](docs/ARCHITECTURE.md#configuration) for the complete configuration contract.
-
-## Local-first privacy and limitations — not an AI therapist
-
-Chat generation, embeddings, the bundled knowledge base, and SQLite persistence are local by default, but the application is local-first rather than strictly offline. Fonts, frontend libraries, text-to-speech, browser speech recognition, YouTube media, and printable reports may contact external services.
-
-The server has permissive CORS, no authentication, no encryption layer, and no multi-user isolation. Do not expose port `8000` to the public internet or an untrusted network. Personal memory is session-scoped but not encrypted; deleting derived memory does not delete the transcript.
-
-Model quality and latency depend on local hardware and the selected models. Assessments are self-help aids, not diagnoses. The application does not monitor emergencies, contact a clinician, dispatch help, or automatically escalate a crisis.
-
-Read the full [Privacy, safety, and limitations](docs/PRIVACY_AND_SAFETY.md) before entering sensitive information.
-
-## Open-source AI mental health chatbot development
-
-Run the deterministic suite without the live memory integration:
-
-```bash
-python -m pytest -q --ignore=tests/test_real_memory.py
-```
-
-The current suite passes 51 tests. Live memory, RAG evaluation, baseline metrics, and manual interaction checks are documented in [Development and evaluation](docs/DEVELOPMENT.md). Read [CONTRIBUTING.md](CONTRIBUTING.md) before a substantial pull request and [SECURITY.md](SECURITY.md) for sensitive reports.
+More detail: [Privacy, safety, and limitations](docs/PRIVACY_AND_SAFETY.md).
 
 ## License
 
