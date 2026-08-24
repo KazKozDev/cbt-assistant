@@ -1,6 +1,6 @@
 # CBT Assistant — Local AI CBT Companion with Ollama
 
-A local AI mental-health assistant for CBT-informed conversations, structured journaling, self-assessments, guided SOS exercises, and private session memory. The browser app runs on FastAPI, SQLite, and local Ollama models; its default chat and retrieval path does not require a hosted LLM API key.
+A local AI mental-health assistant for CBT-informed conversations, structured journaling, self-assessments, guided SOS exercises, and private session memory.
 
 ```bash
 # macOS 14+
