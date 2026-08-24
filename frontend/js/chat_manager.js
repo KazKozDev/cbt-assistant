@@ -4,7 +4,7 @@ function sendQuick(txt) {
 }
 
 function currentChatLanguage() {
-    return (window.getCurrentLanguage && window.getCurrentLanguage()) || 'ru';
+    return (window.getCurrentLanguage && window.getCurrentLanguage()) || 'en';
 }
 
 async function sendMessage() {

@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>КПТ Ассистент</title>
+    <title>CBT Assistant</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -42,7 +42,7 @@
         <div class="header">
             <div style="display:flex; align-items:center; gap:8px;">
                 <i data-lucide="brain"></i>
-                <span style="font-weight: 500; color: var(--text);" data-i18n="app_title">КПТ Ассистент</span>
+                <span style="font-weight: 500; color: var(--text);" data-i18n="app_title">CBT Assistant</span>
             </div>
             <div style="display:flex; align-items:center; gap:12px;">
                 <button onclick="openModal('sosModal')"
@@ -50,7 +50,7 @@
                         data-lucide="life-buoy" style="width:14px; color:#ffffff;"></i> <span data-i18n="sos_button">SOS</span></button>
                 <div style="display:flex; align-items:center; gap:8px;">
                     <span class="status-dot" id="dotStatus"></span>
-                    <span id="txtStatus" data-i18n="status_connecting">Подключение...</span>
+                    <span id="txtStatus" data-i18n="status_connecting">Connecting...</span>
                 </div>
             </div>
         </div>
@@ -61,7 +61,7 @@
             <div class="input-wrap"
                 style="flex-direction: column; align-items: stretch; padding: 12px 16px; border-radius: 16px;">
 
-                <textarea id="msgInput" rows="1" placeholder="Как я могу помочь вам сегодня?" data-i18n-placeholder="input_placeholder"
+                <textarea id="msgInput" rows="1" placeholder="How can I help you today?" data-i18n-placeholder="input_placeholder"
                     style="min-height: 36px; width: 100%; border:none; resize:none; background:transparent; outline:none; font-family:inherit; font-size:15px; overflow:hidden;"
                     onkeydown="if(event.key==='Enter' && !event.shiftKey){event.preventDefault(); sendMessage();}"></textarea>
 
@@ -80,7 +80,7 @@
 
             <p
                 style="text-align:center; font-size:11px; color:var(--gray); opacity:0.6; margin:6px 0 0; letter-spacing:0.1px;">
-                <span data-i18n="assistant_disclaimer">Ассистент может ошибаться. При остром состоянии обратитесь к специалисту.</span>
+                <span data-i18n="assistant_disclaimer">The assistant can make mistakes. If you are in acute distress, contact a professional.</span>
             </p>
 
             <div id="quickSuggestions"
@@ -874,9 +874,9 @@
             style="position:absolute; top:24px; right:24px; background:none; border:none; color:rgba(255,255,255,0.6); cursor:pointer; font-size:28px; z-index:10; line-height:1;">×</button>
         <div class="pmr-scene">
             <div class="pmr-step-num" id="pmrStepNum">1</div>
-            <div class="pmr-muscle" id="pmrMuscle">Лицо</div>
-            <div class="pmr-phase" id="pmrPhase">Напрягите</div>
-            <div class="pmr-instruction" id="pmrInstruction">Сожмите лицо: зажмурьтесь, нахмурьтесь, сожмите челюсть
+            <div class="pmr-muscle" id="pmrMuscle">Face</div>
+            <div class="pmr-phase" id="pmrPhase">Tense</div>
+            <div class="pmr-instruction" id="pmrInstruction">Tense your face: close your eyes tightly, frown, and clench your jaw
             </div>
             <div class="pmr-timer" id="pmrTimer">5</div>
             <div class="pmr-progress">

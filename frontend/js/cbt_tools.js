@@ -224,7 +224,7 @@ const CBT_I18N = {
 };
 
 function cbtLang() {
-    return (window.getCurrentLanguage && window.getCurrentLanguage()) || 'ru';
+    return (window.getCurrentLanguage && window.getCurrentLanguage()) || 'en';
 }
 
 function cbtText(key) {
@@ -233,7 +233,7 @@ function cbtText(key) {
 }
 
 function cbtLocale() {
-    return (window.getCurrentLocale && window.getCurrentLocale()) || 'ru-RU';
+    return (window.getCurrentLocale && window.getCurrentLocale()) || 'en-US';
 }
 
 function cbtFormat(key, vars) {
@@ -853,7 +853,7 @@ const ASSESSMENT_I18N = {
 };
 
 function assessmentText(key) {
-    const lang = window.getCurrentLanguage ? window.getCurrentLanguage() : 'ru';
+    const lang = window.getCurrentLanguage ? window.getCurrentLanguage() : 'en';
     return (ASSESSMENT_I18N[lang] && ASSESSMENT_I18N[lang][key]) || ASSESSMENT_I18N.ru[key];
 }
 
@@ -1852,7 +1852,7 @@ async function loadInsights() {
 
     const payload = {
         session_id: SESSION_ID,
-        lang: localStorage.getItem('APP_LANG') || 'ru',
+        lang: localStorage.getItem('APP_LANG') || 'en',
         mood_log: JSON.parse(localStorage.getItem('moodLog') || '[]'),
         sleep_log: JSON.parse(localStorage.getItem('sleepLog') || '[]'),
         activities: JSON.parse(localStorage.getItem('activities') || '[]'),

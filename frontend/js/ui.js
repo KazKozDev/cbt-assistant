@@ -256,7 +256,7 @@ const UI_TRANSLATIONS = {
 };
 
 function getCurrentLanguage() {
-    return localStorage.getItem('APP_LANG') || 'ru';
+    return localStorage.getItem('APP_LANG') || 'en';
 }
 window.getCurrentLanguage = getCurrentLanguage;
 
@@ -1007,6 +1007,10 @@ function refreshLocalizedExercises() {
         ['groundSense', GROUND_STEPS[groundStepIdx]?.sense || GROUND_STEPS[0]?.sense || ''],
         ['groundInstruction', GROUND_STEPS[groundStepIdx]?.text || GROUND_STEPS[0]?.text || ''],
         ['pmrMuscle', PMR_STEPS[pmrStepIdx]?.muscle || PMR_STEPS[0]?.muscle || ''],
+        ['pmrPhase', pmrPhaseIsTense ? content.pmrPhaseTense : content.pmrPhaseRelax],
+        ['pmrInstruction', pmrPhaseIsTense
+            ? (PMR_STEPS[pmrStepIdx]?.tenseText || PMR_STEPS[0]?.tenseText || '')
+            : (PMR_STEPS[pmrStepIdx]?.relaxText || PMR_STEPS[0]?.relaxText || '')],
         ['stopWord', STOP_STEPS[stopStepIdx]?.word || STOP_STEPS[0]?.word || ''],
         ['stopInstruction', STOP_STEPS[stopStepIdx]?.text || STOP_STEPS[0]?.text || '']
     ];

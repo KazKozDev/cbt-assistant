@@ -151,6 +151,9 @@ def test_chat_endpoint(mock_chat, override_db):
     data = response.json()
     assert data["response"] == "Mocked response"
     assert data["session_id"] == session_id
+
+    request_messages = mock_chat.await_args.args[0]
+    assert "Reply in English only" in request_messages[0]["content"]
     
     # Check history is saved
     history = override_db.get_history(session_id)

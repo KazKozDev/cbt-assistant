@@ -80,7 +80,7 @@ app.add_middleware(
 class ChatRequest(BaseModel):
     message: str
     session_id: str = "default"
-    language: str = "ru"
+    language: str = "en"
 
 
 class MoodRequest(BaseModel):
@@ -91,7 +91,7 @@ class MoodRequest(BaseModel):
 
 class TTSRequest(BaseModel):
     text: str
-    language: str = "ru"
+    language: str = "en"
     voice: str | None = None
 
 
