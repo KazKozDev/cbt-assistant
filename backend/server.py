@@ -220,11 +220,33 @@ def get_user_data_tools():
         {
             "type": "function",
             "function": {
-                "name": "start_breathing",
-                "description": "Запустить дыхательную разминку/упражнение на клиенте, если пользователь жалуется на панику, тревогу или сильный стресс.",
+                "name": "start_sos_exercise",
+                "description": (
+                    "Сразу открыть на клиенте подходящую полноэкранную SOS-практику "
+                    "с визуальной сценой, фоновым звуком и таймером. Используй только "
+                    "когда пользователь согласен начать практику или прямо просит её запустить."
+                ),
                 "parameters": {
                     "type": "object",
-                    "properties": {},
+                    "properties": {
+                        "technique": {
+                            "type": "string",
+                            "enum": ["breathing", "grounding", "pmr", "stop"],
+                            "description": "Практика: дыхание, заземление 5-4-3-2-1, мышечная релаксация или СТОП.",
+                        },
+                        "scene": {
+                            "type": "string",
+                            "enum": ["air", "field", "sea", "night_forest"],
+                            "description": "Атмосфера портала: воздух, поле, море или ночной лес.",
+                        },
+                        "duration": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 10,
+                            "description": "Продолжительность состояния в минутах, от 1 до 10.",
+                        },
+                    },
+                    "required": ["technique", "scene", "duration"],
                 },
             },
         },
@@ -398,8 +420,33 @@ def execute_app_tool(session_id: str, tool_call: dict) -> tuple[str, dict | None
             "type": "add_activity",
             "text": text,
         }
-    if name == "start_breathing":
-        return "Breathing exercise opened in the interface.", {"type": "start_breathing"}
+    if name in {"start_sos_exercise", "start_breathing"}:
+        technique = args.get("technique", "breathing")
+        if technique not in {"breathing", "grounding", "pmr", "stop"}:
+            return f"Error: Unsupported SOS technique {technique}", None
+        default_scenes = {
+            "breathing": "air",
+            "grounding": "field",
+            "pmr": "sea",
+            "stop": "night_forest",
+        }
+        scene = args.get("scene", default_scenes[technique])
+        if scene not in {"air", "field", "sea", "night_forest"}:
+            scene = default_scenes[technique]
+        try:
+            duration = int(args.get("duration", 2))
+        except (TypeError, ValueError):
+            duration = 2
+        duration = max(1, min(duration, 10))
+        return (
+            f"SOS exercise opened: {technique}, scene {scene}, {duration} min.",
+            {
+                "type": "start_sos_exercise",
+                "technique": technique,
+                "scene": scene,
+                "duration": duration,
+            },
+        )
     if name == "recommend_test":
         test_type = args.get("test_type", "PHQ-9")
         return f"The {test_type} test was opened in the interface.", {
@@ -524,8 +571,9 @@ async def chat_stream(req: ChatRequest):
                             )
                             for tc in tool_calls:
                                 fn_name = tc.get("function", {}).get("name")
-                                tool_content, _event = execute_app_tool(req.session_id, tc)
-                                yield f"data: {json.dumps({'tool_call': fn_name})}\n\n"
+                                tool_content, event = execute_app_tool(req.session_id, tc)
+                                payload = {"client_event": event} if event else {"tool_call": fn_name}
+                                yield f"data: {json.dumps(payload)}\n\n"
                                 messages.append(
                                     {"role": "tool", "content": tool_content, "name": fn_name}
                                 )

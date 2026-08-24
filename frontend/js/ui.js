@@ -21,6 +21,9 @@ const UI_TRANSLATIONS = {
         input_placeholder: 'Как я могу помочь вам сегодня?',
         input_placeholder_idle: 'Задайте вопрос...',
         input_placeholder_listening: 'Слушаю...',
+        input_placeholder_mic_denied: 'Нет доступа к микрофону',
+        input_placeholder_mic_error: 'Не удалось запустить голосовой ввод',
+        input_placeholder_mic_unsupported: 'Голосовой ввод не поддерживается в этом браузере',
         assistant_disclaimer: 'Ассистент может ошибаться. При остром состоянии обратитесь к специалисту.',
         welcome_morning: 'Доброе утро',
         welcome_day: 'Добрый день',
@@ -132,7 +135,9 @@ const UI_TRANSLATIONS = {
         done_arrow: 'Готово →',
         breathe_phase: 'Дыхание',
         cycle_one: 'Цикл 1',
-        follow_circle: 'Следуйте за кругом'
+        follow_circle: 'Следуйте за кругом',
+        sos_sound_on: 'Включить фоновый звук',
+        sos_sound_off: 'Выключить фоновый звук'
     },
     en: {
         document_title: 'CBT Assistant',
@@ -156,6 +161,9 @@ const UI_TRANSLATIONS = {
         input_placeholder: 'How can I help you today?',
         input_placeholder_idle: 'Ask a question...',
         input_placeholder_listening: 'Listening...',
+        input_placeholder_mic_denied: 'Microphone access was denied',
+        input_placeholder_mic_error: 'Could not start voice input',
+        input_placeholder_mic_unsupported: 'Voice input is not supported in this browser',
         assistant_disclaimer: 'The assistant may be mistaken. In an acute state, contact a professional.',
         welcome_morning: 'Good morning',
         welcome_day: 'Good afternoon',
@@ -267,7 +275,9 @@ const UI_TRANSLATIONS = {
         done_arrow: 'Done →',
         breathe_phase: 'Breathing',
         cycle_one: 'Cycle 1',
-        follow_circle: 'Follow the circle'
+        follow_circle: 'Follow the circle',
+        sos_sound_on: 'Turn ambient sound on',
+        sos_sound_off: 'Turn ambient sound off'
     }
 };
 
@@ -609,25 +619,109 @@ function closeModal(id) {
     if (id === 'sleepModal' && typeof window.resetSleepEditor === 'function') window.resetSleepEditor();
 }
 
-let rec = null, isRec = false;
+let rec = null;
+let isRec = false;
+let micPrefix = '';
+let micFinalText = '';
+let micRestartTimer = null;
+let micRecognitionError = null;
+
+function setMicUi(active, placeholderKey) {
+    const btn = document.getElementById('micBtn');
+    const input = document.getElementById('msgInput');
+    if (btn) {
+        btn.style.color = active ? 'var(--accent)' : '';
+        btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+        btn.innerHTML = '<i data-lucide="' + (active ? 'square' : 'mic') + '" style="width:18px;"></i>';
+    }
+    if (input && placeholderKey) input.placeholder = t(placeholderKey);
+    if (window.lucide) lucide.createIcons();
+}
+
+function stopMicRecognition(placeholderKey = 'input_placeholder_idle') {
+    isRec = false;
+    if (micRestartTimer) clearTimeout(micRestartTimer);
+    micRestartTimer = null;
+    setMicUi(false, placeholderKey);
+    if (rec) {
+        try { rec.stop(); } catch (error) { /* Recognition is already stopped. */ }
+    }
+}
+
 if (window.SpeechRecognition || window.webkitSpeechRecognition) {
-    let SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    rec = new SR(); rec.lang = 'ru-RU'; rec.continuous = true; rec.interimResults = true;
-    rec.onresult = (e) => {
-        let t = '';
-        for (let i = e.resultIndex; i < e.results.length; i++) t += e.results[i][0].transcript;
-        let inp = document.getElementById('msgInput');
-        inp.value = t;
-        inp.dispatchEvent(new Event('input')); // trigger resize
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    rec = new SR();
+    rec.continuous = true;
+    rec.interimResults = true;
+
+    rec.onstart = () => {
+        micRecognitionError = null;
+        setMicUi(true, 'input_placeholder_listening');
     };
-    rec.onend = () => { if (isRec) try { rec.start() } catch (e) { } };
+
+    rec.onresult = (e) => {
+        let finalText = '';
+        let interimText = '';
+        for (let i = 0; i < e.results.length; i++) {
+            const transcript = e.results[i][0].transcript.trim();
+            if (e.results[i].isFinal) finalText += (finalText ? ' ' : '') + transcript;
+            else interimText += (interimText ? ' ' : '') + transcript;
+        }
+        micFinalText = finalText;
+        const input = document.getElementById('msgInput');
+        if (!input) return;
+        input.value = [micPrefix, micFinalText, interimText].filter(Boolean).join(' ');
+        input.dispatchEvent(new Event('input'));
+    };
+
+    rec.onerror = (event) => {
+        micRecognitionError = event.error || 'unknown';
+        if (!isRec && micRecognitionError === 'aborted') return;
+        const permissionDenied = micRecognitionError === 'not-allowed' || micRecognitionError === 'service-not-allowed';
+        stopMicRecognition(permissionDenied ? 'input_placeholder_mic_denied' : 'input_placeholder_mic_error');
+    };
+
+    rec.onend = () => {
+        if (!isRec || micRecognitionError) return;
+        micRestartTimer = setTimeout(() => {
+            if (!isRec) return;
+            try { rec.start(); }
+            catch (error) { stopMicRecognition('input_placeholder_mic_error'); }
+        }, 250);
+    };
 }
-function toggleMic() {
-    if (!rec) return;
-    let btn = document.getElementById('micBtn');
-    if (isRec) { isRec = false; btn.style.color = ''; rec.stop(); document.getElementById('msgInput').placeholder = t('input_placeholder_idle'); }
-    else { isRec = true; btn.style.color = 'var(--accent)'; rec.start(); document.getElementById('msgInput').placeholder = t('input_placeholder_listening'); }
+
+async function toggleMic() {
+    if (!rec) {
+        setMicUi(false, 'input_placeholder_mic_unsupported');
+        return;
+    }
+    if (isRec) {
+        stopMicRecognition();
+        return;
+    }
+
+    const input = document.getElementById('msgInput');
+    micPrefix = input ? input.value.trim() : '';
+    micFinalText = '';
+    micRecognitionError = null;
+    isRec = true;
+    setMicUi(true, 'input_placeholder_listening');
+
+    try {
+        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            stream.getTracks().forEach(track => track.stop());
+        }
+        if (!isRec) return;
+        rec.lang = getCurrentLanguage() === 'en' ? 'en-US' : 'ru-RU';
+        rec.start();
+    } catch (error) {
+        const denied = error && (error.name === 'NotAllowedError' || error.name === 'SecurityError');
+        stopMicRecognition(denied ? 'input_placeholder_mic_denied' : 'input_placeholder_mic_error');
+    }
 }
+window.toggleMic = toggleMic;
 
 let ttsEnabled = false;
 let ttsAudio = null;
@@ -651,56 +745,89 @@ function stopTTSPlayback() {
 }
 window.stopTTSPlayback = stopTTSPlayback;
 
-async function playAssistantSpeech(text, language) {
-    const lang = language || getCurrentLanguage();
-    const cleanText = (text || '')
-        .replace(/<[^>]+>/g, ' ')
-        .replace(/\*/g, '')
-        .replace(/\s+/g, ' ')
-        .trim()
-        .slice(0, 1000);
+function speakWithBrowserTts(text, language) {
+    if (!window.speechSynthesis || !window.SpeechSynthesisUtterance) return false;
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = language === 'en' ? 'en-US' : 'ru-RU';
+    const languagePrefix = utterance.lang.slice(0, 2).toLowerCase();
+    const voice = window.speechSynthesis.getVoices().find(function (candidate) {
+        return (candidate.lang || '').toLowerCase().startsWith(languagePrefix);
+    });
+    if (voice) utterance.voice = voice;
+    window.speechSynthesis.speak(utterance);
+    return true;
+}
 
-    if (!cleanText) return;
-
+async function playRemoteTts(text, language, voice) {
     stopTTSPlayback();
-    ttsRequestController = new AbortController();
+    const controller = new AbortController();
+    ttsRequestController = controller;
 
     try {
         const res = await fetch(API + '/api/tts', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                text: cleanText,
-                language: lang,
-                voice: getPreferredTtsVoice(lang)
-            }),
-            signal: ttsRequestController.signal
+            body: JSON.stringify({ text, language, voice }),
+            signal: controller.signal
         });
-        if (!res.ok) throw new Error('TTS request failed');
+        if (!res.ok) {
+            const detail = await res.text();
+            throw new Error('TTS request failed (' + res.status + '): ' + detail);
+        }
 
         const blob = await res.blob();
-        if (ttsRequestController.signal.aborted) return;
+        if (controller.signal.aborted) return;
+        if (!blob.size) throw new Error('TTS returned empty audio');
 
         const objectUrl = URL.createObjectURL(blob);
         const audio = new Audio(objectUrl);
         audio.dataset.objectUrl = objectUrl;
-        audio.onended = () => {
+        const release = () => {
             URL.revokeObjectURL(objectUrl);
             if (ttsAudio === audio) ttsAudio = null;
         };
-        audio.onerror = () => {
-            URL.revokeObjectURL(objectUrl);
-            if (ttsAudio === audio) ttsAudio = null;
-        };
-
+        audio.onended = release;
+        audio.onerror = release;
         ttsAudio = audio;
-        await audio.play();
+        try {
+            await audio.play();
+        } catch (error) {
+            release();
+            throw error;
+        }
+    } finally {
+        if (ttsRequestController === controller) ttsRequestController = null;
+    }
+}
+
+function sanitizeTextForSpeech(text) {
+    return (text || '')
+        .replace(/(?:^|\n)\s*(?:Найденная опора|Retrieved evidence)\s*:\s*(?:\[KB:[^\]]+\](?:\s*,\s*)?)+\s*$/gmi, ' ')
+        .replace(/\[KB:[^\]]+\]/gi, ' ')
+        .replace(/\[([^\]]+)\]\(https?:\/\/[^)]+\)/gi, '$1')
+        .replace(/https?:\/\/\S+/gi, ' ')
+        .replace(/<[^>]+>/g, ' ')
+        .replace(/[*_`#]+/g, '')
+        .replace(/\s+/g, ' ')
+        .replace(/\s+([.,!?;:])/g, '$1')
+        .trim();
+}
+window.sanitizeTextForSpeech = sanitizeTextForSpeech;
+
+async function playAssistantSpeech(text, language) {
+    const lang = language || getCurrentLanguage();
+    const cleanText = sanitizeTextForSpeech(text).slice(0, 1000);
+
+    if (!cleanText) return;
+
+    try {
+        await playRemoteTts(cleanText, lang, getPreferredTtsVoice(lang));
     } catch (err) {
         if (err.name !== 'AbortError') {
             console.error('Microsoft TTS playback failed', err);
+            speakWithBrowserTts(cleanText, lang);
         }
-    } finally {
-        ttsRequestController = null;
     }
 }
 window.playAssistantSpeech = playAssistantSpeech;
@@ -712,37 +839,13 @@ async function previewTtsVoice(language) {
         : 'Так звучит выбранный голос Microsoft.';
     const select = document.getElementById(isEnglish ? 'ttsVoiceEn' : 'ttsVoiceRu');
     const voice = select ? select.value : getPreferredTtsVoice(language);
-    stopTTSPlayback();
-    ttsRequestController = new AbortController();
-
     try {
-        const res = await fetch(API + '/api/tts', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ text, language, voice }),
-            signal: ttsRequestController.signal
-        });
-        if (!res.ok) throw new Error('TTS preview request failed');
-        const blob = await res.blob();
-        if (ttsRequestController.signal.aborted) return;
-
-        const objectUrl = URL.createObjectURL(blob);
-        const audio = new Audio(objectUrl);
-        audio.dataset.objectUrl = objectUrl;
-        audio.onended = () => {
-            URL.revokeObjectURL(objectUrl);
-            if (ttsAudio === audio) ttsAudio = null;
-        };
-        audio.onerror = () => {
-            URL.revokeObjectURL(objectUrl);
-            if (ttsAudio === audio) ttsAudio = null;
-        };
-        ttsAudio = audio;
-        await audio.play();
+        await playRemoteTts(text, language, voice);
     } catch (err) {
-        if (err.name !== 'AbortError') console.error('Microsoft TTS preview failed', err);
-    } finally {
-        ttsRequestController = null;
+        if (err.name !== 'AbortError') {
+            console.error('Microsoft TTS preview failed', err);
+            speakWithBrowserTts(text, language);
+        }
     }
 }
 window.previewTtsVoice = previewTtsVoice;
@@ -752,10 +855,12 @@ function toggleTTS() {
     let btn = document.getElementById('ttsBtn');
     if (ttsEnabled) {
         btn.style.color = 'var(--accent)';
+        btn.setAttribute('aria-pressed', 'true');
         btn.innerHTML = '<i data-lucide="volume-2" style="width:18px;"></i>';
-        playAssistantSpeech(getCurrentLanguage() === 'en' ? 'Voice on' : 'Голос включен', getCurrentLanguage());
+        speakWithBrowserTts(getCurrentLanguage() === 'en' ? 'Voice on' : 'Голос включен', getCurrentLanguage());
     } else {
         btn.style.color = '';
+        btn.setAttribute('aria-pressed', 'false');
         btn.innerHTML = '<i data-lucide="volume-x" style="width:18px;"></i>';
         stopTTSPlayback();
     }
@@ -1053,6 +1158,218 @@ function refreshLocalizedExercises() {
     });
 }
 
+/* === SOS ambient sound === */
+const SOS_AUDIO_TRACKS = Object.freeze({
+    breathing: 'audio/sos/breathing-soft-air.mp3',
+    grounding: 'audio/sos/grounding-open-field.mp3',
+    pmr: 'audio/sos/muscle-relaxation-sea.mp3',
+    stop: 'audio/sos/stop-night-forest.mp3'
+});
+const SOS_DEFAULT_SCENES = Object.freeze({
+    breathing: 'air',
+    grounding: 'field',
+    pmr: 'sea',
+    stop: 'night_forest'
+});
+const SOS_SCENES = Object.freeze({
+    air: {
+        image: 'img/bg/forest.png',
+        audio: SOS_AUDIO_TRACKS.breathing,
+        label: { ru: 'Воздух', en: 'Air' }
+    },
+    field: {
+        image: 'img/bg/sos-grounding-field.png',
+        audio: SOS_AUDIO_TRACKS.grounding,
+        label: { ru: 'Поле', en: 'Field' }
+    },
+    sea: {
+        image: 'img/bg/sos-muscle-relaxation-sea.png',
+        audio: SOS_AUDIO_TRACKS.pmr,
+        label: { ru: 'Море', en: 'Sea' }
+    },
+    night_forest: {
+        image: 'img/bg/stars.png',
+        audio: SOS_AUDIO_TRACKS.stop,
+        label: { ru: 'Ночной лес', en: 'Night forest' }
+    }
+});
+const SOS_AUDIO_VOLUME = 0.28;
+let sosAmbientAudio = null;
+let sosAmbientTechnique = null;
+let sosAmbientScene = null;
+let sosAmbientRunId = 0;
+let sosAmbientEnabled = localStorage.getItem('sosAmbientSound') !== 'off';
+let sosPortalTimerId = null;
+let sosPortalTechnique = null;
+
+function updateSosSoundButtons() {
+    const label = t(sosAmbientEnabled ? 'sos_sound_off' : 'sos_sound_on');
+    document.querySelectorAll('[data-sos-audio-toggle]').forEach(function (button) {
+        button.dataset.enabled = sosAmbientEnabled ? 'true' : 'false';
+        button.setAttribute('aria-pressed', sosAmbientEnabled ? 'true' : 'false');
+        button.setAttribute('aria-label', label);
+        button.title = label;
+    });
+}
+
+function fadeSosAudio(audio, targetVolume, duration, onComplete) {
+    if (!audio) return;
+    if (audio._sosFadeFrame) cancelAnimationFrame(audio._sosFadeFrame);
+    const startVolume = audio.volume;
+    const startedAt = performance.now();
+
+    function step(now) {
+        const progress = Math.min(1, (now - startedAt) / duration);
+        audio.volume = startVolume + ((targetVolume - startVolume) * progress);
+        if (progress < 1) {
+            audio._sosFadeFrame = requestAnimationFrame(step);
+        } else {
+            audio._sosFadeFrame = null;
+            if (onComplete) onComplete();
+        }
+    }
+
+    audio._sosFadeFrame = requestAnimationFrame(step);
+}
+
+function resolveSosScene(technique, scene) {
+    const resolvedName = SOS_SCENES[scene] ? scene : SOS_DEFAULT_SCENES[technique];
+    return { name: resolvedName, ...SOS_SCENES[resolvedName] };
+}
+
+function playSosAmbient(technique, scene) {
+    const resolvedScene = resolveSosScene(technique, scene);
+    const track = resolvedScene.audio || SOS_AUDIO_TRACKS[technique];
+    if (!track) return;
+
+    sosAmbientTechnique = technique;
+    sosAmbientScene = resolvedScene.name;
+    sosAmbientRunId++;
+    const runId = sosAmbientRunId;
+
+    if (sosAmbientAudio) {
+        if (sosAmbientAudio._sosFadeFrame) cancelAnimationFrame(sosAmbientAudio._sosFadeFrame);
+        sosAmbientAudio.pause();
+        sosAmbientAudio = null;
+    }
+
+    updateSosSoundButtons();
+    if (!sosAmbientEnabled) return;
+
+    const audio = new Audio(track);
+    audio.loop = true;
+    audio.preload = 'auto';
+    audio.volume = 0;
+    sosAmbientAudio = audio;
+
+    const playPromise = audio.play();
+    if (playPromise) {
+        playPromise.then(function () {
+            if (runId !== sosAmbientRunId || sosAmbientAudio !== audio) {
+                audio.pause();
+                return;
+            }
+            fadeSosAudio(audio, SOS_AUDIO_VOLUME, 900);
+        }).catch(function () {
+            if (sosAmbientAudio === audio) sosAmbientAudio = null;
+        });
+    }
+}
+
+function stopSosAmbient(technique) {
+    if (technique && sosAmbientTechnique !== technique) return;
+    sosAmbientTechnique = null;
+    sosAmbientScene = null;
+    sosAmbientRunId++;
+    const audio = sosAmbientAudio;
+    sosAmbientAudio = null;
+    if (!audio) return;
+    fadeSosAudio(audio, 0, 300, function () {
+        audio.pause();
+        audio.currentTime = 0;
+    });
+}
+
+function toggleSosAmbientSound() {
+    sosAmbientEnabled = !sosAmbientEnabled;
+    localStorage.setItem('sosAmbientSound', sosAmbientEnabled ? 'on' : 'off');
+    if (sosAmbientEnabled && sosAmbientTechnique) {
+        playSosAmbient(sosAmbientTechnique, sosAmbientScene);
+    } else if (!sosAmbientEnabled) {
+        const activeTechnique = sosAmbientTechnique;
+        const activeScene = sosAmbientScene;
+        stopSosAmbient(activeTechnique);
+        sosAmbientTechnique = activeTechnique;
+        sosAmbientScene = activeScene;
+    }
+    updateSosSoundButtons();
+}
+window.toggleSosAmbientSound = toggleSosAmbientSound;
+
+function applySosPortalScene(overlay, technique, scene, gradient, fallbackImage) {
+    const image = scene ? resolveSosScene(technique, scene).image : fallbackImage;
+    overlay.dataset.sosScene = scene || SOS_DEFAULT_SCENES[technique];
+    overlay.style.backgroundImage = gradient + ', url(' + image + ')';
+}
+
+function stopSosPortalTimer(technique) {
+    if (technique && sosPortalTechnique !== technique) return;
+    if (sosPortalTimerId) clearInterval(sosPortalTimerId);
+    sosPortalTimerId = null;
+    sosPortalTechnique = null;
+    document.querySelectorAll('.sos-portal-timer').forEach(function (timer) {
+        timer.remove();
+    });
+}
+
+function startSosPortalTimer(technique, scene, duration) {
+    stopSosPortalTimer();
+    const minutes = Number(duration);
+    if (!Number.isFinite(minutes) || minutes <= 0) return;
+
+    const safeMinutes = Math.max(1, Math.min(Math.round(minutes), 10));
+    const overlayIds = {
+        breathing: 'breatheOverlay',
+        grounding: 'groundOverlay',
+        pmr: 'pmrOverlay',
+        stop: 'stopOverlay'
+    };
+    const closeFunctions = {
+        breathing: closeBreatheScreen,
+        grounding: closeGroundScreen,
+        pmr: closePmrScreen,
+        stop: closeStopScreen
+    };
+    const overlay = document.getElementById(overlayIds[technique]);
+    if (!overlay) return;
+
+    const resolvedScene = resolveSosScene(technique, scene);
+    const badge = document.createElement('div');
+    badge.className = 'sos-portal-timer';
+    badge.setAttribute('role', 'timer');
+    badge.setAttribute('aria-live', 'off');
+    overlay.appendChild(badge);
+
+    let remaining = safeMinutes * 60;
+    sosPortalTechnique = technique;
+    function render() {
+        const minutePart = Math.floor(remaining / 60);
+        const secondPart = String(remaining % 60).padStart(2, '0');
+        const lang = getCurrentLanguage();
+        badge.textContent = resolvedScene.label[lang] + ' · ' + minutePart + ':' + secondPart;
+    }
+    render();
+    sosPortalTimerId = setInterval(function () {
+        remaining--;
+        render();
+        if (remaining <= 0) {
+            const close = closeFunctions[technique];
+            stopSosPortalTimer(technique);
+            if (close) close();
+        }
+    }, 1000);
+}
+
 /* === SOS Tabs === */
 function switchSosTab(n) {
     const tb = document.getElementById('sosTabBody');
@@ -1070,17 +1387,25 @@ function setBreatheType(idx) {
 }
 window.setBreatheType = setBreatheType;
 
-function openBreatheScreen() {
+function openBreatheScreen(options = {}) {
     console.log('openBreatheScreen called');
     var overlay = document.getElementById('breatheOverlay');
     if (!overlay) { console.error('breatheOverlay not found!'); return; }
 
     // Set background image based on selected type
     const type = BREATHE_TYPES[breatheTypeIdx];
-    overlay.style.backgroundImage = 'linear-gradient(to bottom, rgba(5,5,16,0.6) 0%, rgba(5,5,16,0.85) 100%), url(' + type.bgImage + ')';
+    applySosPortalScene(
+        overlay,
+        'breathing',
+        options.scene,
+        'linear-gradient(to bottom, rgba(5,5,16,0.6) 0%, rgba(5,5,16,0.85) 100%)',
+        type.bgImage
+    );
 
     overlay.style.display = 'flex';
     document.body.style.overflow = 'hidden';
+    playSosAmbient('breathing', options.scene);
+    startSosPortalTimer('breathing', options.scene, options.duration);
     // Reset visuals
     var phase = document.getElementById('breathePhase');
     var timer = document.getElementById('breatheTimer');
@@ -1110,6 +1435,8 @@ window.openBreatheScreen = openBreatheScreen;
 
 function closeBreatheScreen() {
     stopBreathing();
+    stopSosAmbient('breathing');
+    stopSosPortalTimer('breathing');
     destroyBreatheParticles();
     var overlay = document.getElementById('breatheOverlay');
     if (overlay) overlay.style.display = 'none';
@@ -1254,18 +1581,28 @@ function stopBreathing() {
 
 var groundStepIdx = 0;
 
-function openGroundScreen() {
+function openGroundScreen(options = {}) {
     groundStepIdx = 0;
     var overlay = document.getElementById('groundOverlay');
     if (!overlay) return;
-    overlay.style.backgroundImage = 'linear-gradient(to bottom, rgba(9,16,12,0.52) 0%, rgba(9,16,12,0.82) 100%), url(img/bg/forest.png)';
+    applySosPortalScene(
+        overlay,
+        'grounding',
+        options.scene,
+        'linear-gradient(to bottom, rgba(9,16,12,0.48) 0%, rgba(9,16,12,0.78) 100%)',
+        'img/bg/sos-grounding-field.png'
+    );
     overlay.style.display = 'flex';
     document.body.style.overflow = 'hidden';
+    playSosAmbient('grounding', options.scene);
+    startSosPortalTimer('grounding', options.scene, options.duration);
     renderGroundStep();
 }
 window.openGroundScreen = openGroundScreen;
 
 function closeGroundScreen() {
+    stopSosAmbient('grounding');
+    stopSosPortalTimer('grounding');
     var overlay = document.getElementById('groundOverlay');
     if (overlay) overlay.style.display = 'none';
     document.body.style.overflow = '';
@@ -1284,7 +1621,10 @@ function renderGroundStep() {
     if (numEl) { numEl.innerText = step.num; numEl.style.animation = 'none'; numEl.offsetHeight; numEl.style.animation = ''; }
     if (senseEl) { senseEl.innerText = step.sense; senseEl.style.animation = 'none'; senseEl.offsetHeight; senseEl.style.animation = ''; }
     if (instrEl) { instrEl.innerText = step.text; instrEl.style.animation = 'none'; instrEl.offsetHeight; instrEl.style.animation = ''; }
-    if (btn) btn.innerText = (groundStepIdx < 4) ? t('done_arrow') : (getCurrentLanguage() === 'en' ? 'Finish' : 'Завершить');
+    if (btn) {
+        btn.innerText = (groundStepIdx < 4) ? t('done_arrow') : (getCurrentLanguage() === 'en' ? 'Finish' : 'Завершить');
+        btn.onclick = groundNext;
+    }
     if (scene) scene.classList.remove('ground-complete');
 
     dots.forEach(function (d, i) {
@@ -1323,14 +1663,22 @@ var pmrStepIdx = 0;
 var pmrPhaseIsTense = true;
 var pmrTimerId = null;
 
-function openPmrScreen() {
+function openPmrScreen(options = {}) {
     pmrStepIdx = 0;
     pmrPhaseIsTense = true;
     var overlay = document.getElementById('pmrOverlay');
     if (!overlay) return;
-    overlay.style.backgroundImage = 'linear-gradient(to bottom, rgba(7,10,22,0.58) 0%, rgba(7,10,22,0.84) 100%), url(img/bg/ocean.png)';
+    applySosPortalScene(
+        overlay,
+        'pmr',
+        options.scene,
+        'linear-gradient(to bottom, rgba(7,10,22,0.52) 0%, rgba(7,10,22,0.8) 100%)',
+        'img/bg/sos-muscle-relaxation-sea.png'
+    );
     overlay.style.display = 'flex';
     document.body.style.overflow = 'hidden';
+    playSosAmbient('pmr', options.scene);
+    startSosPortalTimer('pmr', options.scene, options.duration);
     renderPmrStep();
     startPmrTimer(5);
 }
@@ -1339,6 +1687,8 @@ window.openPmrScreen = openPmrScreen;
 function closePmrScreen() {
     clearInterval(pmrTimerId);
     pmrTimerId = null;
+    stopSosAmbient('pmr');
+    stopSosPortalTimer('pmr');
     var overlay = document.getElementById('pmrOverlay');
     if (overlay) overlay.style.display = 'none';
     document.body.style.overflow = '';
@@ -1351,6 +1701,7 @@ function renderPmrStep() {
     var muscleEl = document.getElementById('pmrMuscle');
     var phaseEl = document.getElementById('pmrPhase');
     var instrEl = document.getElementById('pmrInstruction');
+    var btn = document.getElementById('pmrNextBtn');
     var scene = document.querySelector('.pmr-scene');
     var dots = document.querySelectorAll('.pmr-dot');
 
@@ -1365,6 +1716,10 @@ function renderPmrStep() {
         phaseEl.className = 'pmr-phase' + (pmrPhaseIsTense ? ' tense' : ' relax');
     }
     if (instrEl) instrEl.innerText = pmrPhaseIsTense ? step.tenseText : step.relaxText;
+    if (btn) {
+        btn.innerText = t('skip_arrow');
+        btn.onclick = pmrNext;
+    }
     if (scene) scene.classList.remove('pmr-complete');
 
     dots.forEach(function (d, i) {
@@ -1443,18 +1798,28 @@ function showPmrComplete() {
 
 var stopStepIdx = 0;
 
-function openStopScreen() {
+function openStopScreen(options = {}) {
     stopStepIdx = 0;
     var overlay = document.getElementById('stopOverlay');
     if (!overlay) return;
-    overlay.style.backgroundImage = 'linear-gradient(to bottom, rgba(6,8,18,0.54) 0%, rgba(6,8,18,0.82) 100%), url(img/bg/stars.png)';
+    applySosPortalScene(
+        overlay,
+        'stop',
+        options.scene,
+        'linear-gradient(to bottom, rgba(6,8,18,0.54) 0%, rgba(6,8,18,0.82) 100%)',
+        'img/bg/stars.png'
+    );
     overlay.style.display = 'flex';
     document.body.style.overflow = 'hidden';
+    playSosAmbient('stop', options.scene);
+    startSosPortalTimer('stop', options.scene, options.duration);
     renderStopStep();
 }
 window.openStopScreen = openStopScreen;
 
 function closeStopScreen() {
+    stopSosAmbient('stop');
+    stopSosPortalTimer('stop');
     var overlay = document.getElementById('stopOverlay');
     if (overlay) overlay.style.display = 'none';
     document.body.style.overflow = '';
@@ -1665,26 +2030,38 @@ function scheduleNotifications(s) {
     }
 }
 
+function startSosExerciseFromAI(event = {}) {
+    const technique = ['breathing', 'grounding', 'pmr', 'stop'].includes(event.technique)
+        ? event.technique
+        : 'breathing';
+    const options = {
+        scene: event.scene,
+        duration: event.duration
+    };
+    const launchers = {
+        breathing: openBreatheScreen,
+        grounding: openGroundScreen,
+        pmr: openPmrScreen,
+        stop: openStopScreen
+    };
+    const overlays = {
+        breathing: ['breatheOverlay', closeBreatheScreen],
+        grounding: ['groundOverlay', closeGroundScreen],
+        pmr: ['pmrOverlay', closePmrScreen],
+        stop: ['stopOverlay', closeStopScreen]
+    };
+
+    Object.entries(overlays).forEach(function ([name, [overlayId, close]]) {
+        const overlay = document.getElementById(overlayId);
+        if (name !== technique && overlay?.style.display !== 'none') close();
+    });
+    closeModal('sosModal');
+    launchers[technique](options);
+}
+window.startSosExerciseFromAI = startSosExerciseFromAI;
+
 function startBreathingFromAI() {
-    openModal('sosModal');
-    switchSosTab(0);
-    if (!breatheTimer) toggleBreathing();
-    const practiceLabel = getCurrentLanguage() === 'en' ? 'breathing practice' : 'Дыхательную практику';
-    const sentence = getCurrentLanguage() === 'en'
-        ? '🌬️ I started a {link} for you. Follow the on-screen instructions.'
-        : '🌬️ Я запустил(а) для вас {link}. Следуйте инструкциям на экране.';
-    let btnMessage = document.getElementById('messages');
-    let div = document.createElement('div');
-    div.className = 'msg assistant';
-    div.innerHTML = `
-                <div class="msg-avatar"><i data-lucide="sparkles" style="width:18px;"></i></div>
-                <div class="msg-content"><p>${sentence.replace('{link}', `<a href="#" onclick="openModal('sosModal'); return false;" style="color:var(--accent);text-decoration:underline;">${practiceLabel}</a>`)}</p></div>
-            `;
-    if (btnMessage) {
-        btnMessage.appendChild(div);
-        if (window.lucide) window.lucide.createIcons();
-        btnMessage.scrollTop = btnMessage.scrollHeight;
-    }
+    startSosExerciseFromAI({ technique: 'breathing', scene: 'air', duration: 2 });
 }
 window.startBreathingFromAI = startBreathingFromAI;
 

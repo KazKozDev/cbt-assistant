@@ -5,10 +5,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CBT Assistant</title>
+    <link rel="icon" href="favicon.svg?v=3" type="image/svg+xml">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link rel="stylesheet" href="css/style.css?v=23">
+    <link rel="stylesheet" href="css/style.css?v=24">
 </head>
 
 <body>
@@ -68,9 +69,9 @@
                 <div style="display: flex; justify-content: flex-end; align-items: center; margin-top: 4px;">
                     <!-- Right: Mic, Send -->
                     <div style="display:flex; align-items:center; gap:8px;">
-                        <button class="btn-icon" id="ttsBtn" onclick="toggleTTS()" title="Озвучка ассистента" data-i18n-title="tts_title"
+                        <button class="btn-icon" id="ttsBtn" onclick="toggleTTS()" title="Озвучка ассистента" data-i18n-title="tts_title" aria-pressed="false"
                             style="padding:4px;"><i data-lucide="volume-x" style="width:18px;"></i></button>
-                        <button class="btn-icon" id="micBtn" onclick="toggleMic()" title="Голосовой ввод" data-i18n-title="mic_title"
+                        <button class="btn-icon" id="micBtn" onclick="toggleMic()" title="Голосовой ввод" data-i18n-title="mic_title" aria-pressed="false"
                             style="padding:4px;"><i data-lucide="mic" style="width:18px;"></i></button>
                         <button class="btn-send" id="sendBtn" onclick="sendMessage()"><i data-lucide="arrow-up"
                                 style="width:18px;"></i></button>
@@ -875,14 +876,19 @@
         </div>
     </div>
 
-    <script src="js/ui.js?v=18"></script>
+    <script src="js/ui.js?v=23"></script>
     <script src="js/report.js?v=2"></script>
-    <script src="js/chat_manager.js?v=4"></script>
+    <script src="js/chat_manager.js?v=5"></script>
     <script src="js/cbt_tools.js?v=13"></script>
     <script src="js/main.js?v=5"></script>
 
     <!-- Fullscreen PMR Overlay -->
     <div id="pmrOverlay" class="pmr-overlay" style="display:none;">
+        <button type="button" onclick="toggleSosAmbientSound()" class="sos-audio-toggle"
+            data-sos-audio-toggle data-enabled="true" aria-pressed="true" aria-label="Выключить фоновый звук">
+            <span class="sos-audio-on" aria-hidden="true">♪</span>
+            <span class="sos-audio-off" aria-hidden="true">♪</span>
+        </button>
         <button onclick="closePmrScreen()"
             style="position:absolute; top:24px; right:24px; background:none; border:none; color:rgba(255,255,255,0.6); cursor:pointer; font-size:28px; z-index:10; line-height:1;">×</button>
         <div class="pmr-scene">
@@ -905,6 +911,11 @@
 
     <!-- Fullscreen STOP Overlay -->
     <div id="stopOverlay" class="stop-overlay" style="display:none;">
+        <button type="button" onclick="toggleSosAmbientSound()" class="sos-audio-toggle"
+            data-sos-audio-toggle data-enabled="true" aria-pressed="true" aria-label="Выключить фоновый звук">
+            <span class="sos-audio-on" aria-hidden="true">♪</span>
+            <span class="sos-audio-off" aria-hidden="true">♪</span>
+        </button>
         <button onclick="closeStopScreen()" class="sos-fullscreen-close">×</button>
         <div class="stop-scene">
             <div class="stop-letter" id="stopLetter">S</div>
@@ -923,6 +934,11 @@
 
     <!-- Fullscreen Grounding Overlay -->
     <div id="groundOverlay" class="ground-overlay" style="display:none;">
+        <button type="button" onclick="toggleSosAmbientSound()" class="sos-audio-toggle"
+            data-sos-audio-toggle data-enabled="true" aria-pressed="true" aria-label="Выключить фоновый звук">
+            <span class="sos-audio-on" aria-hidden="true">♪</span>
+            <span class="sos-audio-off" aria-hidden="true">♪</span>
+        </button>
         <button onclick="closeGroundScreen()" class="sos-fullscreen-close">×</button>
         <div class="ground-scene">
             <div class="ground-number" id="groundNumber">5</div>
@@ -945,6 +961,11 @@
         <div class="breathe-bg-glow"></div>
         <!-- Floating particles -->
         <div class="breathe-particles" id="breatheParticles"></div>
+        <button type="button" onclick="toggleSosAmbientSound()" class="sos-audio-toggle"
+            data-sos-audio-toggle data-enabled="true" aria-pressed="true" aria-label="Выключить фоновый звук">
+            <span class="sos-audio-on" aria-hidden="true">♪</span>
+            <span class="sos-audio-off" aria-hidden="true">♪</span>
+        </button>
         <!-- Close button -->
         <button onclick="closeBreatheScreen()" class="breathe-close-btn" aria-label="Close">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">

@@ -33,6 +33,8 @@ async function sendMessage() {
             data.client_events.forEach(ev => {
                 if (ev.type === 'add_activity' && window.addActivityFromAI) {
                     window.addActivityFromAI(ev.text);
+                } else if (ev.type === 'start_sos_exercise' && window.startSosExerciseFromAI) {
+                    window.startSosExerciseFromAI(ev);
                 } else if (ev.type === 'start_breathing' && window.startBreathingFromAI) {
                     window.startBreathingFromAI();
                 } else if (ev.type === 'open_test' && window.openTestFromAI) {

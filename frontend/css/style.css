@@ -1214,11 +1214,11 @@ body {
 }
 
 .sos-pane-card--ground {
-    background-image: url('img/bg/stars.png');
+    background-image: url('../img/bg/sos-grounding-field.png');
 }
 
 .sos-pane-card--pmr {
-    background-image: url('img/bg/ocean.png');
+    background-image: url('../img/bg/sos-muscle-relaxation-sea.png');
 }
 
 .sos-pane-card--stop {
@@ -1568,7 +1568,7 @@ body {
     position: fixed;
     inset: 0;
     z-index: 200;
-    background: linear-gradient(135deg, #1a3a2a 0%, #0f2318 40%, #0a1a10 100%);
+    background-image: linear-gradient(to bottom, rgba(9, 16, 12, 0.48), rgba(9, 16, 12, 0.78)), url('../img/bg/sos-grounding-field.png');
     background-size: cover;
     background-position: center;
     display: flex;
@@ -1700,7 +1700,7 @@ body {
     position: fixed;
     inset: 0;
     z-index: 200;
-    background: linear-gradient(135deg, #2a1a3a 0%, #1a0f28 40%, #120a1e 100%);
+    background-image: linear-gradient(to bottom, rgba(7, 10, 22, 0.52), rgba(7, 10, 22, 0.8)), url('../img/bg/sos-muscle-relaxation-sea.png');
     background-size: cover;
     background-position: center;
     display: flex;
@@ -1907,6 +1907,96 @@ body {
     justify-content: center;
     backdrop-filter: blur(10px);
     transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+.sos-audio-toggle {
+    position: absolute;
+    top: 24px;
+    left: 24px;
+    z-index: 20;
+    display: grid;
+    width: 44px;
+    height: 44px;
+    place-items: center;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 50%;
+    background: rgba(8, 10, 18, 0.32);
+    color: rgba(255, 255, 255, 0.86);
+    font: 600 22px/1 Georgia, serif;
+    cursor: pointer;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
+}
+
+.sos-audio-toggle:hover {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.3);
+    color: #fff;
+    transform: scale(1.04);
+}
+
+.sos-audio-toggle:focus-visible {
+    outline: 2px solid rgba(255, 255, 255, 0.9);
+    outline-offset: 3px;
+}
+
+.sos-audio-off {
+    display: none;
+    position: relative;
+    color: rgba(255, 255, 255, 0.58);
+    font-family: inherit;
+}
+
+.sos-audio-off::after {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 24px;
+    height: 2px;
+    border-radius: 999px;
+    background: currentColor;
+    content: '';
+    transform: translate(-50%, -50%) rotate(-45deg);
+}
+
+.sos-audio-toggle[data-enabled="false"] .sos-audio-on {
+    display: none;
+}
+
+.sos-audio-toggle[data-enabled="false"] .sos-audio-off {
+    display: inline;
+}
+
+.sos-portal-timer {
+    position: absolute;
+    top: 26px;
+    left: 50%;
+    z-index: 20;
+    min-width: 118px;
+    padding: 8px 14px;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 999px;
+    background: rgba(8, 10, 18, 0.32);
+    color: rgba(255, 255, 255, 0.88);
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.02em;
+    text-align: center;
+    transform: translateX(-50%);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+}
+
+@media (max-width: 520px) {
+    .sos-audio-toggle {
+        top: 16px;
+        left: 16px;
+    }
+
+    .sos-portal-timer {
+        top: 18px;
+    }
 }
 
 .sos-fullscreen-close:hover {

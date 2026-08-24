@@ -10,7 +10,14 @@ from pathlib import Path
 # Add project root to sys.path so we can import from backend and src
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from backend.server import app, ensure_rag_citations, kb, sessions
+from backend.server import (
+    app,
+    ensure_rag_citations,
+    execute_app_tool,
+    get_user_data_tools,
+    kb,
+    sessions,
+)
 
 # We use the FastAPI TestClient
 client = TestClient(app)
@@ -337,6 +344,85 @@ def test_memory_can_be_cleared_through_api(override_db):
     response = client.delete("/api/memory/forget-me")
     assert response.status_code == 200
     assert client.get("/api/memory/forget-me").json()["profile"] == {}
+
+
+def test_sos_tool_contract_exposes_portal_parameters():
+    tools = {
+        item["function"]["name"]: item["function"] for item in get_user_data_tools()
+    }
+    sos_tool = tools["start_sos_exercise"]
+    parameters = sos_tool["parameters"]
+
+    assert parameters["required"] == ["technique", "scene", "duration"]
+    assert parameters["properties"]["technique"]["enum"] == [
+        "breathing",
+        "grounding",
+        "pmr",
+        "stop",
+    ]
+    assert "sea" in parameters["properties"]["scene"]["enum"]
+    assert parameters["properties"]["duration"]["maximum"] == 10
+
+
+def test_sos_tool_builds_client_portal_event_and_clamps_duration():
+    content, event = execute_app_tool(
+        "portal-session",
+        {
+            "function": {
+                "name": "start_sos_exercise",
+                "arguments": {"technique": "pmr", "scene": "sea", "duration": 25},
+            }
+        },
+    )
+
+    assert "pmr" in content
+    assert event == {
+        "type": "start_sos_exercise",
+        "technique": "pmr",
+        "scene": "sea",
+        "duration": 10,
+    }
+
+
+@patch("backend.server.llm_client.chat", new_callable=AsyncMock)
+def test_chat_returns_sos_portal_event(mock_chat, override_db):
+    mock_chat.side_effect = [
+        {
+            "content": "",
+            "tool_calls": [
+                {
+                    "function": {
+                        "name": "start_sos_exercise",
+                        "arguments": {
+                            "technique": "pmr",
+                            "scene": "sea",
+                            "duration": 5,
+                        },
+                    }
+                }
+            ],
+        },
+        {"content": "Давайте на пять минут перейдём к морю.", "tool_calls": []},
+    ]
+
+    response = client.post(
+        "/api/chat",
+        json={
+            "session_id": "sos-portal",
+            "message": "Давай расслабим мышцы у моря пять минут",
+            "language": "ru",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json()["client_events"] == [
+        {
+            "type": "start_sos_exercise",
+            "technique": "pmr",
+            "scene": "sea",
+            "duration": 5,
+        }
+    ]
 
 @patch("backend.server.llm_client.chat", new_callable=AsyncMock)
 def test_chat_add_activity_tool(mock_chat, override_db):
