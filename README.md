@@ -1,6 +1,6 @@
-# CBT Assistant — Local AI CBT Companion with Ollama
+# CBT Assistant — Local AI Mental Health Chatbot & CBT Journal with Ollama
 
-A local AI mental-health assistant for CBT-informed conversations, structured journaling, self-assessments, guided SOS exercises, and private session memory.
+A local-first AI mental health chatbot for CBT-informed conversations, a structured CBT thought diary, mood tracking, self-assessments, guided SOS exercises, and private session memory.
 
 ```bash
 # macOS 14+
@@ -22,7 +22,7 @@ start_cbt_assistant.bat
   <img src="assets/cbt-assistant-demo.gif" alt="CBT Assistant opening SOS breathing support, reframing an anxious thought, and saving it to the Thought Diary" width="900">
 </p>
 
-## Quick start
+## Quick start: run the local AI CBT chatbot
 
 1. Run the platform command above. The launcher creates `.venv`, installs the Python dependencies, prepares Ollama, downloads `ornith-1.5:9b` and `qwen3-embedding:4b`, starts the server on port `8000`, waits for `/api/health`, and opens the browser.
 2. Start with the chat or open **SOS** for breathing, grounding, muscle relaxation, or STOP. Each fullscreen practice has a visual scene and optional local ambient sound. After you agree to begin, the assistant can choose the practice, scene, and a 1–10 minute timer.
@@ -31,7 +31,7 @@ start_cbt_assistant.bat
 > [!IMPORTANT]
 > CBT Assistant is a self-help and journaling tool, not a therapist, medical device, crisis service, or substitute for professional care. Its responses and assessment results can be wrong. If you may be in immediate danger or at risk of harming yourself or someone else, contact local emergency services or a qualified crisis service now.
 
-## What it does
+## CBT journal app, mood tracker, self-assessments, and SOS exercises
 
 - **Local CBT chat** retrieves relevant passages from the bundled knowledge base before every answer.
 - **Thought Diary** records a situation, automatic thought, emotion, intensity, possible distortion, and balanced response.
@@ -42,7 +42,7 @@ start_cbt_assistant.bat
 
 These records provide future conversation context instead of leaving each chat isolated. Some data is synchronized to SQLite; interface-side state also uses browser `localStorage`.
 
-## Local chat, memory, and tools
+## Private AI mental health chatbot with local memory
 
 The default chat model is [`ornith-1.5:9b`](https://ollama.com/library/ornith-1.5:9b). Each request combines retrieved CBT passages, the latest 20 messages, synchronized journal records, a structured personal profile, and a rolling summary refreshed after every 15 new messages.
 
@@ -55,7 +55,7 @@ DELETE /api/memory/{session_id}
 
 The assistant can open an agreed SOS practice, suggest a self-assessment, add an agreed action to the planner, and read recent sleep, assessment, or activity data. Retrieved passages and profile memory are inserted into the prompt as delimited data, not instructions.
 
-## Local CBT retrieval
+## Local CBT knowledge base with RAG and Ollama
 
 At startup, `src/rag/knowledge_base.py` splits the bundled Markdown knowledge base by heading hierarchy and requests embeddings from `qwen3-embedding:4b`. REST, streaming, and WebSocket chat share this retrieval path; the model cannot skip it.
 
@@ -68,7 +68,7 @@ Results include stable chunk and document IDs, source paths, section hierarchy, 
 
 The default threshold is `0.35`. When no passage clears it, the assistant may continue supportive conversation but must not invent a specific CBT protocol or clinical justification. Retrieval grounding does not make generated advice clinically correct for an individual user.
 
-## How it works
+## How the local AI assistant works
 
 ```text
 Browser UI
@@ -89,7 +89,7 @@ See [Architecture](docs/ARCHITECTURE.md) for the request path, storage model, RA
 
 <a id="manual-installation"></a>
 
-## Manual installation
+## Install the Ollama CBT chatbot manually
 
 Install [Python 3.10+](https://www.python.org/) and [Ollama](https://ollama.com/), then run:
 
@@ -106,7 +106,7 @@ python backend/server.py
 
 Open `http://localhost:8000`. If Ollama is installed but not running, start `ollama serve` in another terminal first. Linux currently uses this manual path; the repository has no Dockerfile or automatic Linux launcher.
 
-## Requirements and configuration
+## Local AI requirements and Ollama configuration
 
 - macOS 14+ for `start_cbt_assistant.command`, or Windows 10 22H2+ for the `.bat` and PowerShell launchers.
 - Python 3.10+, Ollama, a modern browser, and enough memory and disk space for the selected models.
@@ -123,7 +123,7 @@ Open `http://localhost:8000`. If Ollama is installed but not running, start `oll
 
 Generation defaults are 1,024 maximum tokens, temperature `0.7`, and top-p `0.9`. See [Architecture](docs/ARCHITECTURE.md#configuration) for the complete configuration contract.
 
-## Privacy, safety, and limitations
+## Local-first privacy and limitations — not an AI therapist
 
 Chat generation, embeddings, the bundled knowledge base, and SQLite persistence are local by default, but the application is local-first rather than strictly offline. Fonts, frontend libraries, text-to-speech, browser speech recognition, YouTube media, and printable reports may contact external services.
 
@@ -133,7 +133,7 @@ Model quality and latency depend on local hardware and the selected models. Asse
 
 Read the full [Privacy, safety, and limitations](docs/PRIVACY_AND_SAFETY.md) before entering sensitive information.
 
-## Development
+## Open-source AI mental health chatbot development
 
 Run the deterministic suite without the live memory integration:
 
