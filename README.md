@@ -114,9 +114,12 @@ Open `http://localhost:8000`. If Ollama is installed but not running, start `oll
 - Generated responses and self-assessments can be wrong. The application does not diagnose, monitor emergencies, contact a clinician, dispatch help, or replace professional care.
 - Linux requires manual installation; Docker and an automatic Linux launcher are not included.
 
+<br>
+
 <p align="center">
   <a href="https://github.com/KazKozDev/cbt-assistant/actions/workflows/tests.yml"><img alt="CI" src="https://github.com/KazKozDev/cbt-assistant/actions/workflows/tests.yml/badge.svg"></a>
   <a href="https://www.python.org/"><img alt="Python 3.10+" src="https://img.shields.io/badge/Python-3.10%2B-3776AB.svg?logo=python&amp;logoColor=white"></a>
+  <a href="https://github.com/KazKozDev/cbt-assistant/blob/main/LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-blue.svg"></a>
 </p>
 
 <p align="center">
