@@ -94,7 +94,7 @@ Response             Markdown knowledge base
 
 The backend persists messages and structured records in SQLite. RAG restores a matching cached NumPy index or rebuilds it after the knowledge content changes. Failed first builds remain unavailable; failed rebuilds keep the previous complete in-memory index in degraded mode.
 
-See [Architecture](docs/ARCHITECTURE.md) for the request path, storage model, RAG contract, configuration, and important files.
+See Architecture for the request path, storage model, RAG contract, configuration, and important files.
 
 ## Limitations
 
