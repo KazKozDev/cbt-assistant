@@ -118,6 +118,7 @@ See [Architecture](docs/ARCHITECTURE.md) for the request path, storage model, RA
 
 <p align="center">
   <a href="https://github.com/KazKozDev/cbt-assistant/issues">Issues</a> ·
+  <a href="docs/ARCHITECTURE.md">Architecture</a> ·
   <a href="docs/PRIVACY_AND_SAFETY.md">Privacy &amp; Safety</a> ·
   <a href="LICENSE">LICENSE</a> ·
   <a href="https://www.linkedin.com/in/kazkozdev/">LinkedIn</a>
