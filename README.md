@@ -2,6 +2,8 @@
 
 A local-first AI mental health chatbot for CBT-informed conversations, a structured CBT thought diary, mood tracking, self-assessments, guided SOS exercises, and private session memory.
 
+<a id="installation"></a>
+
 ```bash
 # macOS 14+
 git clone https://github.com/KazKozDev/cbt-assistant.git && cd cbt-assistant && ./start_cbt_assistant.command
@@ -10,13 +12,16 @@ git clone https://github.com/KazKozDev/cbt-assistant.git && cd cbt-assistant && 
 git clone https://github.com/KazKozDev/cbt-assistant.git
 cd cbt-assistant
 start_cbt_assistant.bat
-```
 
-<p align="center">
-  <a href="start_cbt_assistant.command"><img src="assets/badges/macos.png" alt="macOS" height="36"></a>
-  <a href="start_cbt_assistant.bat"><img src="assets/badges/windows.png" alt="Windows" height="36"></a>
-  <a href="#manual-installation"><img src="assets/badges/linux.png" alt="Linux" height="36"></a>
-</p>
+# Linux
+git clone https://github.com/KazKozDev/cbt-assistant.git && cd cbt-assistant
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements.txt
+ollama pull ornith-1.5:9b
+ollama pull qwen3-embedding:4b
+python backend/server.py
+```
 
 <p align="center">
   <img src="assets/cbt-assistant-demo.gif" alt="CBT Assistant opening SOS breathing support, reframing an anxious thought, and saving it to the Thought Diary" width="900">
@@ -24,7 +29,7 @@ start_cbt_assistant.bat
 
 ## Quick start: run the local AI CBT chatbot
 
-1. Run the platform command above. The launcher creates `.venv`, installs the Python dependencies, prepares Ollama, downloads `ornith-1.5:9b` and `qwen3-embedding:4b`, starts the server on port `8000`, waits for `/api/health`, and opens the browser.
+1. Run the command for your platform above. The macOS and Windows launchers create `.venv`, install the Python dependencies, prepare Ollama, download `ornith-1.5:9b` and `qwen3-embedding:4b`, start the server on port `8000`, wait for `/api/health`, and open the browser. On Linux, open `http://localhost:8000` after the server starts; if Ollama is installed but not running, start `ollama serve` in another terminal first.
 2. Start with the chat or open **SOS** for breathing, grounding, muscle relaxation, or STOP. Each fullscreen practice has a visual scene and optional local ambient sound. After you agree to begin, the assistant can choose the practice, scene, and a 1–10 minute timer.
 3. Switch between English and Russian in **Settings**. Later launches reuse the environment and downloaded models.
 
@@ -87,25 +92,6 @@ The backend persists messages and structured records in SQLite. RAG restores a m
 
 See [Architecture](docs/ARCHITECTURE.md) for the request path, storage model, RAG contract, configuration, and important files.
 
-<a id="manual-installation"></a>
-
-## Install the Ollama CBT chatbot manually
-
-Install [Python 3.10+](https://www.python.org/) and [Ollama](https://ollama.com/), then run:
-
-```bash
-git clone https://github.com/KazKozDev/cbt-assistant.git
-cd cbt-assistant
-python3 -m venv .venv
-source .venv/bin/activate
-python -m pip install -r requirements.txt
-ollama pull ornith-1.5:9b
-ollama pull qwen3-embedding:4b
-python backend/server.py
-```
-
-Open `http://localhost:8000`. If Ollama is installed but not running, start `ollama serve` in another terminal first. Linux currently uses this manual path; the repository has no Dockerfile or automatic Linux launcher.
-
 ## Limitations
 
 - CBT Assistant is local-first, not fully offline: text-to-speech, browser speech recognition, Google Fonts, CDN scripts, YouTube media, and printable reports may contact external services.
@@ -115,11 +101,15 @@ Open `http://localhost:8000`. If Ollama is installed but not running, start `oll
 - Linux requires manual installation; Docker and an automatic Linux launcher are not included.
 
 <br>
+<br>
 
 <p align="center">
-  <a href="https://github.com/KazKozDev/cbt-assistant/actions/workflows/tests.yml"><img alt="CI" src="https://github.com/KazKozDev/cbt-assistant/actions/workflows/tests.yml/badge.svg"></a>
-  <a href="https://www.python.org/"><img alt="Python 3.10+" src="https://img.shields.io/badge/Python-3.10%2B-3776AB.svg?logo=python&amp;logoColor=white"></a>
-  <a href="https://github.com/KazKozDev/cbt-assistant/blob/main/LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-blue.svg"></a>
+  <a href="start_cbt_assistant.command"><img src="assets/badges/macos.png" alt="macOS" height="28"></a>
+  <a href="start_cbt_assistant.bat"><img src="assets/badges/windows.png" alt="Windows" height="28"></a>
+  <a href="#installation"><img src="assets/badges/linux.png" alt="Linux" height="28"></a>
+  <a href="https://github.com/KazKozDev/cbt-assistant/actions/workflows/tests.yml"><img alt="CI" src="https://github.com/KazKozDev/cbt-assistant/actions/workflows/tests.yml/badge.svg" height="28"></a>
+  <a href="https://www.python.org/"><img alt="Python 3.10+" src="https://img.shields.io/badge/Python-3.10%2B-3776AB.svg?logo=python&amp;logoColor=white" height="28"></a>
+  <a href="https://github.com/KazKozDev/cbt-assistant/blob/main/LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-blue.svg" height="28"></a>
 </p>
 
 <p align="center">
