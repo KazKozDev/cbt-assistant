@@ -1,6 +1,6 @@
 # CBT Assistant — Local AI Mental Health Chatbot & CBT Journal with Ollama
 
-A local-first AI mental health chatbot for CBT-informed conversations, a structured CBT thought diary, mood tracking, self-assessments, guided SOS exercises, and private session memory.
+Local-first CBT assistant: structured thought records, mood and sleep tracking, self-assessments, and SOS exercises — with chat grounded in a local CBT knowledge base via RAG and persistent session memory. Runs entirely on your machine through Ollama.
 
 <a id="installation"></a>
 
