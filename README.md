@@ -1,6 +1,6 @@
 # CBT Assistant — Local AI Mental Health Chatbot & CBT Journal with Ollama
 
-Local-first CBT assistant: structured thought records, mood and sleep tracking, self-assessments, and SOS exercises — with chat grounded in a local CBT knowledge base via RAG and persistent session memory. Runs entirely on your machine through Ollama.
+Local-first CBT assistant: structured thought records, mood and sleep tracking, self-assessments, and SOS exercises — with chat grounded in a local CBT knowledge base via RAG and persistent session memory.
 
 <a id="installation"></a>
 
