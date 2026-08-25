@@ -64,6 +64,8 @@ The assistant can open an agreed SOS practice, suggest a self-assessment, add an
 
 At startup, `src/rag/knowledge_base.py` splits the bundled Markdown knowledge base by heading hierarchy and requests embeddings from `qwen3-embedding:4b`. REST, streaming, and WebSocket chat share this retrieval path; the model cannot skip it.
 
+The RAG implementation covers the full local retrieval path: hierarchical chunking, embedding generation, similarity gating, cached index restoration, traceable source metadata, and degraded-mode handling when an index rebuild fails.
+
 ```text
 GET /api/knowledge/search?q=sleep&top_k=3
 GET /api/knowledge/status
