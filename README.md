@@ -7,12 +7,14 @@ A local-first AI mental health chatbot for CBT-informed conversations, a structu
 ```bash
 # macOS 14+
 git clone https://github.com/KazKozDev/cbt-assistant.git && cd cbt-assistant && ./start_cbt_assistant.command
-
+```
+```bash
 # Windows 10 22H2+ (PowerShell or cmd)
 git clone https://github.com/KazKozDev/cbt-assistant.git
 cd cbt-assistant
 start_cbt_assistant.bat
-
+```
+```bash
 # Linux
 git clone https://github.com/KazKozDev/cbt-assistant.git && cd cbt-assistant
 python3 -m venv .venv
