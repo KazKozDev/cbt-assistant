@@ -112,6 +112,7 @@ See Architecture for the request path, storage model, RAG contract, configuratio
 </p>
 
 <br>
+<br>
 
 <p align="center">
   <a href="start_cbt_assistant.command"><img alt="macOS" src="https://img.shields.io/badge/macOS-000000.svg?logo=apple&amp;logoColor=white" height="28"></a>
