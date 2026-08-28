@@ -49,9 +49,13 @@ These records provide future conversation context instead of leaving each chat i
 
 ## Private AI mental health chatbot with local memory
 
-The default chat model is [`qwen3.5:9b`](https://ollama.com/library/qwen3.5). The assistant contextualizes every response using retrieved CBT passages, your 20 latest messages, journal records, a structured profile, and a rolling summary refreshed after every 15 messages. The AI can proactively suggest self-assessments, add actions to your planner, or read recent sleep and activity data.
+The default chat model is [`qwen3.5:9b`](https://ollama.com/library/qwen3.5). The assistant maintains **durable long-term memory across sessions** by persisting a structured personal profile and rolling conversation summaries in SQLite.
 
-Your browser stores a `SESSION_ID` in `localStorage` to maintain identity across restarts. Clearing browser storage or using a different profile creates a new session. Manage your derived profile and summary via:
+- **AI Tools & Direct Journaling:** During chat, you can ask the assistant to directly record structured entries into your **Thought Diary** (analyzing automatic thoughts, cognitive distortions, and rational responses) or log your **Sleep Diary** (bedtime, wake time, duration, and sleep quality).
+- **Proactive Interventions:** The AI can launch agreed fullscreen **SOS portals**, schedule planned activities, or pull recent sleep, mood, and screening assessments for contextual guidance.
+- **Cross-Session Memory:** A persistent `SESSION_ID` ensures your conversation context, personal profile, and rolling summary survive browser reloads and app restarts.
+
+Manage your derived profile and summary via:
 
 ```text
 GET    /api/memory/{session_id}
