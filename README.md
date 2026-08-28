@@ -115,7 +115,7 @@ See Architecture for the request path, storage model, RAG contract, configuratio
 <br>
 
 <p align="center">
-  <a href="start_cbt_assistant.command"><img alt="macOS" src="https://img.shields.io/badge/macOS-000000.svg?logo=apple&amp;logoColor=white" height="28"></a>
+  <a href="start_cbt_assistant.command"><img alt="macOS" src="https://img.shields.io/badge/macOS-5856D6.svg?logo=apple&amp;logoColor=white" height="28"></a>
   <a href="start_cbt_assistant.bat"><img alt="Windows" src="https://img.shields.io/badge/Windows-0078D4.svg?logo=windows&amp;logoColor=white" height="28"></a>
   <a href="#installation"><img alt="Linux" src="https://img.shields.io/badge/Linux-FCC624.svg?logo=linux&amp;logoColor=black" height="28"></a>
   <a href="https://github.com/KazKozDev/cbt-assistant/actions/workflows/tests.yml"><img alt="CI" src="https://github.com/KazKozDev/cbt-assistant/actions/workflows/tests.yml/badge.svg" height="28"></a>
