@@ -39,7 +39,7 @@ python backend/server.py
 
 ## CBT journal app, mood tracker, self-assessments, and SOS exercises
 
-All records sync to SQLite and `localStorage` to provide persistent context for future AI conversations, rather than leaving chats isolated.
+These records provide future conversation context instead of leaving each chat isolated. Messages and Thought Diary entries are stored in SQLite; interface logs and screening state also use browser `localStorage`.
 
 - **Thought Diary:** Log situations, automatic thoughts, emotions, intensities, cognitive distortions, and rational responses.
 - **Mood & Sleep Logs:** Track daily scores, notes, sleep duration, interruptions, and quality.
