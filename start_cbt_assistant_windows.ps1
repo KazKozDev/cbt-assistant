@@ -16,8 +16,7 @@ $AppPort = 8000
 $AppUrl = "http://127.0.0.1:$AppPort"
 $HealthUrl = "$AppUrl/api/health"
 $OllamaUrl = if ($env:OLLAMA_BASE_URL) { $env:OLLAMA_BASE_URL.TrimEnd("/") } else { "http://127.0.0.1:11434" }
-$ChatModel = if ($env:CBT_ASSISTANT_CHAT_MODEL) { $env:CBT_ASSISTANT_CHAT_MODEL } else { "ornith-1.5:9b" }
-$EmbedModel = "qwen3-embedding:4b"
+$ChatModel = if ($env:CBT_ASSISTANT_CHAT_MODEL) { $env:CBT_ASSISTANT_CHAT_MODEL } else { "qwen3.5:9b" }
 
 function Write-Step {
     param([Parameter(Mandatory = $true)][string]$Message)
@@ -282,7 +281,6 @@ try {
     $ollamaExe = Install-Ollama
     Start-OllamaIfNeeded -OllamaExe $ollamaExe
     Install-OllamaModel -OllamaExe $ollamaExe -ModelName $ChatModel
-    Install-OllamaModel -OllamaExe $ollamaExe -ModelName $EmbedModel
 
     Stop-AppPortListener
     Start-CbtAssistant

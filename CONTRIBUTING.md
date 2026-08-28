@@ -22,8 +22,7 @@ Start Ollama and pull the required models:
 
 ```bash
 ollama serve
-ollama pull ornith-1.5:9b
-ollama pull qwen3-embedding:4b
+ollama pull qwen3.5:9b
 ```
 
 Run the app:

@@ -17,6 +17,7 @@ venv/
 # Local tooling
 .zencoder/
 .zenflow/
+.playwright-cli/
 .env
 .env.*
 !.env.example

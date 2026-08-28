@@ -7,15 +7,18 @@ from src.utils.db import SQLiteSessionManager
 
 logger = logging.getLogger(__name__)
 
+
 class MemorySummarizer:
     def __init__(self, db: SQLiteSessionManager, llm_client: OllamaClient):
         self.db = db
         self.llm_client = llm_client
-        self.trigger_threshold = 15 # Summarize every 15 new messages
+        self.trigger_threshold = 15  # Summarize every 15 new messages
         self._tasks: set[asyncio.Task] = set()
         self._session_locks: dict[str, asyncio.Lock] = {}
 
-    async def _generate_summary(self, old_summary: str, recent_messages: List[Dict]) -> str:
+    async def _generate_summary(
+        self, old_summary: str, recent_messages: List[Dict]
+    ) -> str:
         prompt = """
         Ты - эксперт-психолог, который ведет подробные клинические записи о пациенте.
         Твоя задача — обновить текущее резюме (саммари) пациента на основе новых сообщений из чата.
@@ -36,11 +39,17 @@ class MemorySummarizer:
         ОБНОВЛЕННОЕ РЕЗЮМЕ ПАЦИЕНТА:
         """
 
-        formatted_msgs = "\n".join([f"{m['role']}: {m['content']}" for m in recent_messages])
-        final_prompt = prompt.format(old=old_summary or "Нет данных", new=formatted_msgs)
+        formatted_msgs = "\n".join(
+            [f"{m['role']}: {m['content']}" for m in recent_messages]
+        )
+        final_prompt = prompt.format(
+            old=old_summary or "Нет данных", new=formatted_msgs
+        )
 
         try:
-            resp = await self.llm_client.chat([{"role": "user", "content": final_prompt}])
+            resp = await self.llm_client.chat(
+                [{"role": "user", "content": final_prompt}]
+            )
             return resp.get("content", "").strip()
         except Exception as e:
             logger.error(f"Failed to generate memory summary: {e}")
@@ -75,7 +84,9 @@ class MemorySummarizer:
             if not messages:
                 return
 
-            logger.info(f"Summarizing {len(messages)} messages for session {session_id}")
+            logger.info(
+                f"Summarizing {len(messages)} messages for session {session_id}"
+            )
 
             # 3. Generate new summary
             new_summary = await self._generate_summary(old_summary, messages)

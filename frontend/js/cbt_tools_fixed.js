@@ -357,6 +357,68 @@ function addActivityFromAI(txt) {
 }
 window.addActivityFromAI = addActivityFromAI;
 
+function addThoughtRecordFromAI(rec) {
+    if (!rec) return;
+    let btnMessage = document.getElementById('messages');
+    let div = document.createElement('div');
+    div.className = 'msg assistant';
+    let isEn = typeof currentChatLanguage === 'function' && currentChatLanguage() === 'en';
+    let label = isEn ? 'Thought Diary' : 'Дневник мыслей';
+    let title = rec.thought || rec.situation || '';
+    let text = isEn 
+        ? `📝 Added entry to <a href="#" onclick="openThoughtHistoryModal(); return false;" style="color:var(--accent);text-decoration:underline;">${label}</a>: <b>"${title}"</b>`
+        : `📝 Запись добавлена в <a href="#" onclick="openThoughtHistoryModal(); return false;" style="color:var(--accent);text-decoration:underline;">${label}</a>: <b>«${title}»</b>`;
+    div.innerHTML = `
+        <div class="msg-avatar"><i data-lucide="book-open" style="width:18px;"></i></div>
+        <div class="msg-content"><p>${text}</p></div>
+    `;
+    if (btnMessage) {
+        btnMessage.appendChild(div);
+        if (window.lucide) lucide.createIcons();
+        btnMessage.scrollTop = btnMessage.scrollHeight;
+    }
+}
+window.addThoughtRecordFromAI = addThoughtRecordFromAI;
+
+function addSleepLogFromAI(log) {
+    if (!log) return;
+    let sl = JSON.parse(localStorage.getItem('sleepLog') || '[]');
+    let entry = {
+        bed: log.bed,
+        wake: log.wake,
+        qual: log.qual || 7,
+        awk: log.awk || 0,
+        notes: log.notes || '',
+        durHrs: log.durHrs || 8.0,
+        isoDate: log.isoDate || new Date().toISOString().slice(0, 10),
+        date: new Date().toLocaleDateString('ru-RU')
+    };
+    sl.unshift(entry);
+    if (sl.length > 30) sl.pop();
+    localStorage.setItem('sleepLog', JSON.stringify(sl));
+    if (typeof renderSleepHistory === 'function') renderSleepHistory();
+
+    let btnMessage = document.getElementById('messages');
+    let div = document.createElement('div');
+    div.className = 'msg assistant';
+    let isEn = typeof currentChatLanguage === 'function' && currentChatLanguage() === 'en';
+    let label = isEn ? 'Sleep Diary' : 'Дневник сна';
+    let text = isEn 
+        ? `🌙 Saved entry to <a href="#" onclick="openModal('sleepModal'); return false;" style="color:var(--accent);text-decoration:underline;">${label}</a> (${log.bed} – ${log.wake}, quality: ${log.qual || 7}/10)`
+        : `🌙 Запись сохранена в <a href="#" onclick="openModal('sleepModal'); return false;" style="color:var(--accent);text-decoration:underline;">${label}</a> (${log.bed} – ${log.wake}, качество: ${log.qual || 7}/10)`;
+    div.innerHTML = `
+        <div class="msg-avatar"><i data-lucide="moon" style="width:18px;"></i></div>
+        <div class="msg-content"><p>${text}</p></div>
+    `;
+    if (btnMessage) {
+        btnMessage.appendChild(div);
+        if (window.lucide) lucide.createIcons();
+        btnMessage.scrollTop = btnMessage.scrollHeight;
+    }
+}
+window.addSleepLogFromAI = addSleepLogFromAI;
+
+
 document.getElementById('actInput').addEventListener('keydown', e => { if (e.key === 'Enter') addActivity(); });
 
 function toggleActivity(i) {

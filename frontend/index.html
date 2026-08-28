@@ -42,12 +42,12 @@
     <div class="container empty-state" id="mainContainer">
         <div class="header">
             <div style="display:flex; align-items:center; gap:8px;">
-                <img src="img/logo.png" alt="Logo" style="width:24px; height:24px; object-fit:contain; border-radius:6px;">
+                <img src="img/logo.png" alt="Logo" style="width:44px; height:44px; object-fit:contain; border-radius:8px;">
                 <span style="font-weight: 500; color: var(--text);" data-i18n="app_title">CBT Assistant</span>
             </div>
             <div style="display:flex; align-items:center; gap:12px;">
                 <button onclick="openModal('sosModal')"
-                    style="background:#797298 !important; color:#ffffff !important; border:none; border-radius:10px; padding:7px 14px; font-size:12px; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:6px; letter-spacing:0.3px;"><i
+                    style="background:#797298 !important; color:#ffffff !important; border:none; border-radius:10px; padding:5px 12px; font-size:12px; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:6px; letter-spacing:0.3px;"><i
                         data-lucide="life-buoy" style="width:14px; color:#ffffff;"></i> <span data-i18n="sos_button">SOS</span></button>
                 <div style="display:flex; align-items:center; gap:8px;">
                     <span class="status-dot" id="dotStatus"></span>
@@ -687,13 +687,14 @@
 
     <!-- Notification Settings Modal -->
     <div class="modal-overlay" id="notifModal" onclick="if(event.target===this)closeModal('notifModal')">
-        <div class="modal" style="max-width:420px;">
+        <div class="modal settings-modal">
             <h2><span style="display:flex;align-items:center;gap:8px;"><i data-lucide="settings-2"
                         style="width:18px;color:var(--accent);"></i> <span data-i18n="settings_title">Настройки</span></span>
                 <button class="close" onclick="closeModal('notifModal')"><i data-lucide="x"
                         style="width:20px"></i></button>
             </h2>
-            <div class="settings-section">
+            <div class="settings-grid">
+                <div class="settings-section">
                 <div class="settings-section-label" data-i18n="language_title">Язык</div>
                 <div class="settings-lang-row">
                     <button type="button" class="settings-lang-btn" id="settingsLangRu" onclick="setLanguage('ru')">
@@ -705,8 +706,8 @@
                         <span data-i18n="language_en">English</span>
                     </button>
                 </div>
-            </div>
-            <div class="settings-section">
+                </div>
+                <div class="settings-section">
                 <div class="settings-section-label" data-i18n="ollama_model_title">Модель Ollama</div>
                 <div class="settings-field">
                     <label class="settings-field-label" for="ollamaModelSelect" data-i18n="ollama_model_label">Модель для чата</label>
@@ -718,8 +719,8 @@
                     </div>
                     <div class="settings-field-status" id="ollamaModelStatus" aria-live="polite"></div>
                 </div>
-            </div>
-            <div class="settings-section">
+                </div>
+                <div class="settings-section">
                 <div class="settings-section-label" data-i18n="tts_settings_title">Microsoft TTS</div>
                 <div class="settings-voice-grid">
                     <div class="settings-field">
@@ -737,8 +738,8 @@
                         </div>
                     </div>
                 </div>
-            </div>
-            <div class="settings-section">
+                </div>
+                <div class="settings-section">
                 <div class="settings-section-label" data-i18n="reminders_title">Напоминания</div>
                 <p style="font-size:13px; color:var(--gray); margin:10px 0 20px; line-height:1.5;" data-i18n="reminders_desc">Браузерные уведомления —
                     напомнят записать настроение или практику. Страница должна быть открыта в браузере.</p>
@@ -765,6 +766,7 @@
                         <input type="time" id="notifEveningTime" value="21:00"
                             style="padding:6px 10px; border:1px solid var(--border); border-radius:8px; font-size:13px; background:var(--panel); color:var(--text); outline:none;">
                     </div>
+                </div>
                 </div>
             </div>
             <button class="btn-primary static-accent" onclick="saveNotifSettings()" style="margin-top:20px;" data-i18n="save">Сохранить</button>
@@ -876,7 +878,7 @@
         </div>
     </div>
 
-    <script src="js/ui.js?v=23"></script>
+    <script src="js/ui.js?v=25"></script>
     <script src="js/report.js?v=2"></script>
     <script src="js/chat_manager.js?v=5"></script>
     <script src="js/cbt_tools.js?v=13"></script>

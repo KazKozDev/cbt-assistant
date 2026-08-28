@@ -10,11 +10,10 @@ SERVER_FILE="$PROJECT_DIR/backend/server.py"
 REQUIREMENTS_FILE="$PROJECT_DIR/requirements.txt"
 LOG_DIR="$PROJECT_DIR/logs"
 APP_PORT="8000"
-APP_URL="http://127.0.0.1:$APP_PORT"
+APP_URL="http://localhost:$APP_PORT"
 HEALTH_URL="$APP_URL/api/health"
 OLLAMA_URL="${OLLAMA_BASE_URL:-http://127.0.0.1:11434}"
-CHAT_MODEL="${CBT_ASSISTANT_CHAT_MODEL:-ornith-1.5:9b}"
-EMBED_MODEL="qwen3-embedding:4b"
+CHAT_MODEL="${CBT_ASSISTANT_CHAT_MODEL:-qwen3.5:9b}"
 NO_PAUSE="${CBT_ASSISTANT_NO_PAUSE:-0}"
 
 export PATH="$BOOTSTRAP_BIN:/opt/homebrew/bin:/usr/local/bin:$HOME/.local/bin:$PATH"
@@ -219,7 +218,6 @@ main() {
     ensure_python_environment
     ensure_ollama
     ensure_model "$CHAT_MODEL"
-    ensure_model "$EMBED_MODEL"
     release_app_port
 
     export OLLAMA_BASE_URL="$OLLAMA_URL"

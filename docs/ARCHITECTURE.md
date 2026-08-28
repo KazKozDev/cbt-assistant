@@ -66,10 +66,10 @@ The model can call application functions when relevant:
 | Setting | Default | What it means |
 |---|---|---|
 | App address | `http://localhost:8000` | Browser interface and API; server binds to `0.0.0.0:8000` |
-| Ollama address | `http://localhost:11434` | Override with `OLLAMA_BASE_URL` |
-| Chat model | `ornith-1.5:9b` | `OLLAMA_MODEL` or `CBT_ASSISTANT_CHAT_MODEL`; any installed completion model can be selected in Settings |
-| Embedding model | `qwen3-embedding:4b` | Override with `RAG_EMBED_MODEL` |
-| RAG threshold | `0.35` | Override with `RAG_SCORE_THRESHOLD` |
+| Ollama address | `http://127.0.0.1:11434` | Override with `OLLAMA_BASE_URL` |
+| Chat model | `qwen3.5:9b` | `OLLAMA_MODEL` or `CBT_ASSISTANT_CHAT_MODEL`; any installed completion model can be selected in Settings |
+| Embedding model | `sentence-transformers/paraphrase-multilingual-mpnet-base-v2` | FastEmbed ONNX model; override with `RAG_EMBED_MODEL` |
+| RAG threshold | `0.46` | Override with `RAG_SCORE_THRESHOLD` |
 | Maximum generated tokens | `1024` | `num_predict` sent to Ollama |
 | Temperature | `0.7` | Chat sampling value |
 | Top-p | `0.9` | Chat sampling value |
@@ -79,8 +79,8 @@ The model can call application functions when relevant:
 Example manual model override:
 
 ```bash
-OLLAMA_BASE_URL=http://localhost:11434 \
-OLLAMA_MODEL=ornith-1.5:9b \
+OLLAMA_BASE_URL=http://127.0.0.1:11434 \
+OLLAMA_MODEL=qwen3.5:9b \
 python backend/server.py
 ```
 

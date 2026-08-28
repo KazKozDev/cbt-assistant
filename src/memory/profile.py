@@ -15,7 +15,9 @@ EMPTY_PROFILE: dict[str, Any] = {
 }
 
 _NAME = r"([A-Za-zА-Яа-яЁё][A-Za-zА-Яа-яЁё'’-]{1,30}(?:\s+[A-Za-zА-Яа-яЁё][A-Za-zА-Яа-яЁё'’-]{1,30}){0,2})"
-_CAPITALIZED_NAME = r"([A-ZА-ЯЁ][A-Za-zА-Яа-яЁё'’-]{1,30}(?:\s+[A-ZА-ЯЁ][A-Za-zА-Яа-яЁё'’-]{1,30})?)"
+_CAPITALIZED_NAME = (
+    r"([A-ZА-ЯЁ][A-Za-zА-Яа-яЁё'’-]{1,30}(?:\s+[A-ZА-ЯЁ][A-Za-zА-Яа-яЁё'’-]{1,30})?)"
+)
 _NAME_STOP_WORDS = {"and", "but", "i", "my", "и", "но", "я", "мой", "моя", "мне"}
 
 
@@ -31,7 +33,7 @@ def empty_profile() -> dict[str, Any]:
 
 def _clean_name(value: str) -> str:
     words = []
-    for word in value.strip(" .,!?:;\"“”").split():
+    for word in value.strip(' .,!?:;"“”').split():
         if word.casefold() in _NAME_STOP_WORDS:
             break
         words.append(word)
@@ -120,7 +122,9 @@ def extract_profile_updates(text: str) -> dict[str, Any]:
     return updates
 
 
-def merge_profiles(current: dict[str, Any] | None, updates: dict[str, Any]) -> dict[str, Any]:
+def merge_profiles(
+    current: dict[str, Any] | None, updates: dict[str, Any]
+) -> dict[str, Any]:
     merged = empty_profile()
     if current:
         for key in merged:
@@ -129,13 +133,18 @@ def merge_profiles(current: dict[str, Any] | None, updates: dict[str, Any]) -> d
     if updates.get("user_name"):
         merged["user_name"] = updates["user_name"]
 
-    for field, identity_fields in (("people", ("relation", "name")), ("pets", ("kind", "name"))):
+    for field, identity_fields in (
+        ("people", ("relation", "name")),
+        ("pets", ("kind", "name")),
+    ):
         existing = {
             tuple(str(item.get(key, "")).casefold() for key in identity_fields)
             for item in merged[field]
         }
         for item in updates.get(field, []):
-            identity = tuple(str(item.get(key, "")).casefold() for key in identity_fields)
+            identity = tuple(
+                str(item.get(key, "")).casefold() for key in identity_fields
+            )
             if identity not in existing:
                 merged[field].append(item)
                 existing.add(identity)

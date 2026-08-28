@@ -26,7 +26,9 @@ def test_extracts_pet_from_natural_conversation():
 
 
 def test_profile_merge_updates_name_without_duplicating_facts():
-    initial = merge_profiles({}, extract_profile_updates("Меня зовут Артём. Я люблю чай."))
+    initial = merge_profiles(
+        {}, extract_profile_updates("Меня зовут Артём. Я люблю чай.")
+    )
     updated = merge_profiles(
         initial, extract_profile_updates("Вообще, зови меня Артемий. Я люблю чай.")
     )

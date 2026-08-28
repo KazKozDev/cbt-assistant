@@ -20,18 +20,17 @@ git clone https://github.com/KazKozDev/cbt-assistant.git && cd cbt-assistant
 python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install -r requirements.txt
-ollama pull ornith-1.5:9b
-ollama pull qwen3-embedding:4b
+ollama pull qwen3.5:9b
 python backend/server.py
 ```
 
 <p align="center">
-  <img src="assets/cbt-assistant-demo.gif" alt="CBT Assistant opening SOS breathing support, reframing an anxious thought, and saving it to the Thought Diary" width="900">
+  <img src="assets/CBT3.gif" alt="CBT Assistant opening SOS breathing support, reframing an anxious thought, and saving it to the Thought Diary" width="900">
 </p>
 
 ## Quick start: run the local AI CBT chatbot
 
-1. Run the command for your platform above. The macOS and Windows launchers create `.venv`, install the Python dependencies, prepare Ollama, download `ornith-1.5:9b` and `qwen3-embedding:4b`, start the server on port `8000`, wait for `/api/health`, and open the browser. On Linux, open `http://localhost:8000` after the server starts; if Ollama is installed but not running, start `ollama serve` in another terminal first.
+1. Run the command for your platform above. The macOS and Windows launchers create `.venv`, install the Python dependencies, prepare Ollama, download `qwen3.5:9b`, start the server on port `8000`, wait for `/api/health`, and open the browser. On Linux, open `http://localhost:8000` after the server starts; if Ollama is installed but not running, start `ollama serve` in another terminal first.
 2. Start with the chat or open **SOS** for breathing, grounding, muscle relaxation, or STOP. Each fullscreen practice has a visual scene and optional local ambient sound. After you agree to begin, the assistant can choose the practice, scene, and a 1–10 minute timer.
 3. Switch between English and Russian in **Settings**. Later launches reuse the environment and downloaded models.
 
@@ -51,7 +50,7 @@ These records provide future conversation context instead of leaving each chat i
 
 ## Private AI mental health chatbot with local memory
 
-The default chat model is [`ornith-1.5:9b`](https://ollama.com/library/ornith-1.5:9b). Each request combines retrieved CBT passages, the latest 20 messages, synchronized journal records, a structured personal profile, and a rolling summary refreshed after every 15 new messages.
+The default chat model is [`qwen3.5:9b`](https://ollama.com/library/qwen3.5). Each request combines retrieved CBT passages, the latest 20 messages, synchronized journal records, a structured personal profile, and a rolling summary refreshed after every 15 new messages.
 
 The browser stores its `SESSION_ID` in `localStorage`, so the same profile, transcript, and summary return after a reload or application restart. A different browser profile or cleared browser storage creates a different session identity. Inspect or erase the derived profile and summary with:
 
@@ -62,9 +61,9 @@ DELETE /api/memory/{session_id}
 
 The assistant can open an agreed SOS practice, suggest a self-assessment, add an agreed action to the planner, and read recent sleep, assessment, or activity data. Retrieved passages and profile memory are inserted into the prompt as delimited data, not instructions.
 
-## Local CBT knowledge base with RAG and Ollama
+## Local CBT knowledge base with RAG and FastEmbed
 
-At startup, `src/rag/knowledge_base.py` splits the bundled Markdown knowledge base by heading hierarchy and requests embeddings from `qwen3-embedding:4b`. REST, streaming, and WebSocket chat share this retrieval path; the model cannot skip it.
+At startup, `src/rag/knowledge_base.py` splits the bundled Markdown knowledge base by heading hierarchy and computes embeddings locally using FastEmbed (`paraphrase-multilingual-mpnet-base-v2`). REST, streaming, and WebSocket chat share this retrieval path; the model cannot skip it.
 
 The RAG implementation covers the full local retrieval path: hierarchical chunking, embedding generation, similarity gating, cached index restoration, traceable source metadata, and degraded-mode handling when an index rebuild fails.
 
@@ -108,6 +107,11 @@ See Architecture for the request path, storage model, RAG contract, configuratio
 <br>
 
 <p align="center">
+  <img src="assets/cbt-assistant-art-flow.png" alt="CBT Assistant Art Flow" height="400">
+  <img src="assets/cbt-assistant-art-mind.png" alt="CBT Assistant Art Mind" height="400">
+</p>
+
+<p align="center">
   <a href="start_cbt_assistant.command"><img alt="macOS" src="https://img.shields.io/badge/macOS-000000.svg?logo=apple&amp;logoColor=white" height="28"></a>
   <a href="start_cbt_assistant.bat"><img alt="Windows" src="https://img.shields.io/badge/Windows-0078D4.svg?logo=windows&amp;logoColor=white" height="28"></a>
   <a href="#installation"><img alt="Linux" src="https://img.shields.io/badge/Linux-FCC624.svg?logo=linux&amp;logoColor=black" height="28"></a>
@@ -123,3 +127,4 @@ See Architecture for the request path, storage model, RAG contract, configuratio
   <a href="LICENSE">LICENSE</a> ·
   <a href="https://www.linkedin.com/in/kazkozdev/">LinkedIn</a>
 </p>
+

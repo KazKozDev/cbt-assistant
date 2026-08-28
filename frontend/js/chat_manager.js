@@ -11,6 +11,9 @@ async function sendMessage() {
     let inEl = document.getElementById('msgInput');
     let txt = inEl.value.trim();
     if (!txt || isProc) return;
+    // Stop listening before the assistant can answer; otherwise speech
+    // recognition may feed the assistant's TTS audio back into the input.
+    if (window.stopMicInput) window.stopMicInput();
     isProc = true;
     inEl.value = ''; inEl.style.height = 'auto';
 
@@ -33,6 +36,10 @@ async function sendMessage() {
             data.client_events.forEach(ev => {
                 if (ev.type === 'add_activity' && window.addActivityFromAI) {
                     window.addActivityFromAI(ev.text);
+                } else if (ev.type === 'add_thought_record' && window.addThoughtRecordFromAI) {
+                    window.addThoughtRecordFromAI(ev.record);
+                } else if (ev.type === 'add_sleep_log' && window.addSleepLogFromAI) {
+                    window.addSleepLogFromAI(ev.log);
                 } else if (ev.type === 'start_sos_exercise' && window.startSosExerciseFromAI) {
                     window.startSosExerciseFromAI(ev);
                 } else if (ev.type === 'start_breathing' && window.startBreathingFromAI) {

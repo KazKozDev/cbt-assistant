@@ -313,6 +313,43 @@ class SQLiteSessionManager:
                 )
             conn.commit()
 
+    def add_sleep_log(
+        self,
+        session_id: str,
+        bed: str,
+        wake: str,
+        awk: int = 0,
+        qual: int = 7,
+        notes: str = "",
+        dur_hrs: float | None = None,
+        iso_date: str | None = None,
+    ) -> int:
+        now = datetime.now()
+        date_str = iso_date or now.strftime("%Y-%m-%d")
+        if dur_hrs is None:
+            try:
+                t_bed = datetime.strptime(bed.strip(), "%H:%M")
+                t_wake = datetime.strptime(wake.strip(), "%H:%M")
+                diff = (t_wake - t_bed).total_seconds() / 3600.0
+                if diff < 0:
+                    diff += 24.0
+                dur_hrs = round(diff, 1)
+            except Exception:
+                dur_hrs = 8.0
+
+        with self._get_conn() as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                "INSERT OR IGNORE INTO sessions (id, created_at) VALUES (?, ?)",
+                (session_id, now.isoformat()),
+            )
+            cursor.execute(
+                "INSERT INTO sleep_logs (session_id, bed, wake, awk, qual, notes, dur_hrs, iso_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                (session_id, bed, wake, awk, qual, notes, dur_hrs, date_str),
+            )
+            conn.commit()
+            return cursor.lastrowid
+
     def sync_test_results(self, session_id: str, tests: list[dict]):
         with self._get_conn() as conn:
             conn.execute("DELETE FROM tests WHERE session_id = ?", (session_id,))
@@ -388,30 +425,42 @@ class SQLiteSessionManager:
     def get_session_summary(self, session_id: str) -> str:
         with self._get_conn() as conn:
             cursor = conn.cursor()
-            cursor.execute("SELECT summary FROM session_summaries WHERE session_id = ?", (session_id,))
+            cursor.execute(
+                "SELECT summary FROM session_summaries WHERE session_id = ?",
+                (session_id,),
+            )
             row = cursor.fetchone()
             return row["summary"] if row else ""
 
     def get_message_count_since_last_summary(self, session_id: str) -> int:
         with self._get_conn() as conn:
             cursor = conn.cursor()
-            cursor.execute("SELECT last_summarized_msg_id FROM session_summaries WHERE session_id = ?", (session_id,))
+            cursor.execute(
+                "SELECT last_summarized_msg_id FROM session_summaries WHERE session_id = ?",
+                (session_id,),
+            )
             row = cursor.fetchone()
             last_idx = row["last_summarized_msg_id"] if row else 0
 
-            cursor.execute("SELECT COUNT(*) FROM messages WHERE session_id = ? AND id > ?", (session_id, last_idx))
+            cursor.execute(
+                "SELECT COUNT(*) FROM messages WHERE session_id = ? AND id > ?",
+                (session_id, last_idx),
+            )
             return cursor.fetchone()[0]
 
     def get_unsummarized_messages(self, session_id: str) -> list[dict]:
         with self._get_conn() as conn:
             cursor = conn.cursor()
-            cursor.execute("SELECT last_summarized_msg_id FROM session_summaries WHERE session_id = ?", (session_id,))
+            cursor.execute(
+                "SELECT last_summarized_msg_id FROM session_summaries WHERE session_id = ?",
+                (session_id,),
+            )
             row = cursor.fetchone()
             last_idx = row["last_summarized_msg_id"] if row else 0
 
             cursor.execute(
                 "SELECT id, role, content FROM messages WHERE session_id = ? AND id > ? ORDER BY id ASC",
-                (session_id, last_idx)
+                (session_id, last_idx),
             )
             return [dict(row) for row in cursor.fetchall()]
 
@@ -420,7 +469,9 @@ class SQLiteSessionManager:
         with self._get_conn() as conn:
             cursor = conn.cursor()
             # Get max msg ID to mark as summarized
-            cursor.execute("SELECT MAX(id) FROM messages WHERE session_id = ?", (session_id,))
+            cursor.execute(
+                "SELECT MAX(id) FROM messages WHERE session_id = ?", (session_id,)
+            )
             max_id = cursor.fetchone()[0] or 0
 
             cursor.execute(
@@ -430,7 +481,7 @@ class SQLiteSessionManager:
                 ON CONFLICT(session_id) DO UPDATE SET 
                 summary=excluded.summary, last_summarized_msg_id=excluded.last_summarized_msg_id, updated_at=excluded.updated_at
                 """,
-                (session_id, new_summary, max_id, now)
+                (session_id, new_summary, max_id, now),
             )
             conn.commit()
 

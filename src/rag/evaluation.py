@@ -13,7 +13,9 @@ def matches_expected(chunk: dict[str, Any], case: dict[str, Any]) -> bool:
     )
 
 
-def score_evaluation(cases: list[dict[str, Any]], runs: list[list[dict[str, Any]]]) -> dict[str, Any]:
+def score_evaluation(
+    cases: list[dict[str, Any]], runs: list[list[dict[str, Any]]]
+) -> dict[str, Any]:
     if len(cases) != len(runs):
         raise ValueError("cases and runs must have the same length")
 
@@ -52,7 +54,9 @@ def score_evaluation(cases: list[dict[str, Any]], runs: list[list[dict[str, Any]
         "positive_count": positive_count,
         "negative_count": negative_count,
         "recall_at_k": round(recalled / positive_count, 4) if positive_count else None,
-        "mrr": round(reciprocal_rank_sum / positive_count, 4) if positive_count else None,
+        "mrr": round(reciprocal_rank_sum / positive_count, 4)
+        if positive_count
+        else None,
         "abstention_accuracy": (
             round(correct_abstentions / negative_count, 4) if negative_count else None
         ),

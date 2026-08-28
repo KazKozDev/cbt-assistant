@@ -6,55 +6,66 @@ import concurrent.futures
 from PIL import Image
 
 PROJECT_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
-SCRATCH_DIR = os.path.join(PROJECT_ROOT, 'scratch', 'cinematic_demo_v2')
-FRAMES_DIR = os.path.join(SCRATCH_DIR, 'frames')
-PNGS_DIR = os.path.join(SCRATCH_DIR, 'pngs')
-FINAL_FRAMES_DIR = os.path.join(SCRATCH_DIR, 'final_frames')
+SCRATCH_DIR = os.path.join(PROJECT_ROOT, "scratch", "cinematic_demo_v2")
+FRAMES_DIR = os.path.join(SCRATCH_DIR, "frames")
+PNGS_DIR = os.path.join(SCRATCH_DIR, "pngs")
+FINAL_FRAMES_DIR = os.path.join(SCRATCH_DIR, "final_frames")
 
 os.makedirs(FRAMES_DIR, exist_ok=True)
 os.makedirs(PNGS_DIR, exist_ok=True)
 os.makedirs(FINAL_FRAMES_DIR, exist_ok=True)
 
-CHROME_PATH = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
+CHROME_PATH = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
 
 # Load forest background and logo as base64 for 100% reliable Chrome rendering
-forest_path = os.path.join(PROJECT_ROOT, 'frontend', 'img', 'bg', 'forest.png')
-with open(forest_path, 'rb') as f:
-    FOREST_B64 = base64.b64encode(f.read()).decode('utf-8')
+forest_path = os.path.join(PROJECT_ROOT, "frontend", "img", "bg", "forest.png")
+with open(forest_path, "rb") as f:
+    FOREST_B64 = base64.b64encode(f.read()).decode("utf-8")
 
-logo_path = os.path.join(PROJECT_ROOT, 'frontend', 'img', 'logo.png')
-with open(logo_path, 'rb') as f:
-    LOGO_B64 = base64.b64encode(f.read()).decode('utf-8')
+logo_path = os.path.join(PROJECT_ROOT, "frontend", "img", "logo.png")
+with open(logo_path, "rb") as f:
+    LOGO_B64 = base64.b64encode(f.read()).decode("utf-8")
 
 # SVG Icons
-ICON_NOTEBOOK = '''<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13.4 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7.4"/><path d="M2 6h4"/><path d="M2 10h4"/><path d="M2 14h4"/><path d="M2 18h4"/><path d="M18.4 2.6a2.12 2.12 0 0 1 3 3L11 16l-4 1 1-4Z"/></svg>'''
-ICON_MOON = '''<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>'''
-ICON_CLIPBOARD = '''<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></svg>'''
-ICON_CALENDAR = '''<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></svg>'''
-ICON_BARCHART = '''<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" x2="12" y1="20" y2="10"/><line x1="18" x2="18" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="16"/></svg>'''
-ICON_SETTINGS = '''<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>'''
-ICON_USER = '''<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>'''
-ICON_LIFEBUOY = '''<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m4.93 4.93 4.24 4.24"/><path d="m14.83 9.17 4.24-4.24"/><path d="m14.83 14.83 4.24 4.24"/><path d="m9.17 14.83-4.24 4.24"/><circle cx="12" cy="12" r="4"/></svg>'''
-ICON_SEND = '''<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m5 12 7-7 7 7"/><path d="M12 19V5"/></svg>'''
-ICON_WIND = '''<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.7 7.7A2.5 2.5 0 1 1 19 12H2"/><path d="M12.6 19.4A2 2 0 1 0 14 16H2"/></svg>'''
+ICON_NOTEBOOK = """<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13.4 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7.4"/><path d="M2 6h4"/><path d="M2 10h4"/><path d="M2 14h4"/><path d="M2 18h4"/><path d="M18.4 2.6a2.12 2.12 0 0 1 3 3L11 16l-4 1 1-4Z"/></svg>"""
+ICON_MOON = """<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>"""
+ICON_CLIPBOARD = """<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></svg>"""
+ICON_CALENDAR = """<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></svg>"""
+ICON_BARCHART = """<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" x2="12" y1="20" y2="10"/><line x1="18" x2="18" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="16"/></svg>"""
+ICON_SETTINGS = """<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>"""
+ICON_USER = """<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>"""
+ICON_LIFEBUOY = """<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m4.93 4.93 4.24 4.24"/><path d="m14.83 9.17 4.24-4.24"/><path d="m14.83 14.83 4.24 4.24"/><path d="m9.17 14.83-4.24 4.24"/><circle cx="12" cy="12" r="4"/></svg>"""
+ICON_SEND = """<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m5 12 7-7 7 7"/><path d="M12 19V5"/></svg>"""
+ICON_WIND = """<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.7 7.7A2.5 2.5 0 1 1 19 12H2"/><path d="M12.6 19.4A2 2 0 1 0 14 16H2"/></svg>"""
 
-def get_chat_html(typed_text="", show_user_msg=False, show_assistant_msg=False, assistant_text="", show_cursor_click=False, zoom_factor=1.0, zoom_origin="50% 50%"):
-    css_path = os.path.abspath(os.path.join(PROJECT_ROOT, 'frontend', 'css', 'style.css'))
-    
+
+def get_chat_html(
+    typed_text="",
+    show_user_msg=False,
+    show_assistant_msg=False,
+    assistant_text="",
+    show_cursor_click=False,
+    zoom_factor=1.0,
+    zoom_origin="50% 50%",
+):
+    css_path = os.path.abspath(
+        os.path.join(PROJECT_ROOT, "frontend", "css", "style.css")
+    )
+
     user_msg_html = ""
     if show_user_msg:
-        user_msg_html = f'''
+        user_msg_html = f"""
         <div class="msg user" style="animation: fadeIn 0.3s ease;">
             <div class="msg-avatar">{ICON_USER}</div>
             <div class="msg-content">
                 <p>I feel really anxious and overwhelmed right now...</p>
             </div>
         </div>
-        '''
-        
+        """
+
     assistant_msg_html = ""
     if show_assistant_msg:
-        assistant_msg_html = f'''
+        assistant_msg_html = f"""
         <div class="msg" style="animation: fadeIn 0.3s ease;">
             <div class="msg-avatar" style="background:var(--accent-light); display:flex; align-items:center; justify-content:center;">
                 <img src="data:image/png;base64,{LOGO_B64}" style="width:20px; height:20px; object-fit:contain;">
@@ -69,20 +80,20 @@ def get_chat_html(typed_text="", show_user_msg=False, show_assistant_msg=False, 
                 </div>
             </div>
         </div>
-        '''
-        
+        """
+
     click_indicator = ""
     if show_cursor_click:
-        click_indicator = '''
+        click_indicator = """
         <div style="position:absolute; bottom:195px; left:470px; pointer-events:none; z-index:100; display:flex; align-items:center; gap:8px;">
             <svg width="26" height="26" viewBox="0 0 24 24" fill="#2f2f2b" stroke="#ffffff" stroke-width="1.5">
                 <path d="m3 3 7 18 3-7 7-3L3 3z"/>
             </svg>
             <div style="width:30px; height:30px; border-radius:50%; background:rgba(121,114,152,0.4); border:2px solid #797298; position:absolute; top:-6px; left:-6px; animation: pulse 0.5s infinite;"></div>
         </div>
-        '''
+        """
 
-    html = f'''<!DOCTYPE html>
+    html = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -199,7 +210,7 @@ def get_chat_html(typed_text="", show_user_msg=False, show_assistant_msg=False, 
                 </button>
                 <div style="display:flex; align-items:center; gap:8px; font-size:13px; color:#6b6b63;">
                     <span style="width:8px; height:8px; border-radius:50%; background:#6aa882; display:inline-block;"></span>
-                    <span>Online • ornith-1.5:9b</span>
+                    <span>Online • qwen3.5:9b</span>
                 </div>
             </div>
         </div>
@@ -227,22 +238,25 @@ def get_chat_html(typed_text="", show_user_msg=False, show_assistant_msg=False, 
     </div>
     {click_indicator}
 </body>
-</html>'''
+</html>"""
     return html
 
+
 def get_breathe_html(scale, count_num, t_sec, particles):
-    css_path = os.path.abspath(os.path.join(PROJECT_ROOT, 'frontend', 'css', 'style.css'))
-    
-    p_html = ''
+    css_path = os.path.abspath(
+        os.path.join(PROJECT_ROOT, "frontend", "css", "style.css")
+    )
+
+    p_html = ""
     for p in particles:
-        cur_y = (p['start_y'] + p['speed'] * t_sec) % 900
-        p_html += f'''<div class="breathe-particle" style="width:{p['size']}px;height:{p['size']}px;left:{p['left']}%;bottom:{cur_y}px;background:hsla({p['hue']},75%,70%,0.45);box-shadow:0 0 {p['size']*3}px hsla({p['hue']},75%,70%,0.4);"></div>'''
-        
+        cur_y = (p["start_y"] + p["speed"] * t_sec) % 900
+        p_html += f"""<div class="breathe-particle" style="width:{p['size']}px;height:{p['size']}px;left:{p['left']}%;bottom:{cur_y}px;background:hsla({p['hue']},75%,70%,0.45);box-shadow:0 0 {p['size']*3}px hsla({p['hue']},75%,70%,0.4);"></div>"""
+
     ease_progress = (scale - 1.0) / 0.6
     glow_scale = 1.0 + 0.5 * ease_progress
     glow_opacity = 0.35 + 0.45 * ease_progress
 
-    html = f'''<!DOCTYPE html>
+    html = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -308,31 +322,38 @@ def get_breathe_html(scale, count_num, t_sec, particles):
         </div>
     </div>
 </body>
-</html>'''
+</html>"""
     return html
 
+
 def render_one(name, html_content):
-    html_file = os.path.join(FRAMES_DIR, f'{name}.html')
-    png_file = os.path.join(PNGS_DIR, f'{name}.png')
-    
+    html_file = os.path.join(FRAMES_DIR, f"{name}.html")
+    png_file = os.path.join(PNGS_DIR, f"{name}.png")
+
     if os.path.exists(png_file) and os.path.getsize(png_file) > 10000:
         return name
 
-    with open(html_file, 'w', encoding='utf-8') as f:
+    with open(html_file, "w", encoding="utf-8") as f:
         f.write(html_content)
-        
+
     cmd = [
         CHROME_PATH,
-        '--headless=new',
-        '--disable-gpu',
-        '--window-size=1280,920',
-        f'--screenshot={png_file}',
-        f'file://{html_file}'
+        "--headless=new",
+        "--disable-gpu",
+        "--window-size=1280,920",
+        f"--screenshot={png_file}",
+        f"file://{html_file}",
     ]
-    
+
     for attempt in range(3):
         try:
-            subprocess.run(cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=15)
+            subprocess.run(
+                cmd,
+                check=True,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                timeout=15,
+            )
             if os.path.exists(png_file) and os.path.getsize(png_file) > 10000:
                 break
         except Exception:
@@ -340,28 +361,32 @@ def render_one(name, html_content):
                 raise
     return name
 
+
 def main():
     print("Generating cinematic frames specification (v2)...")
     os.makedirs(FRAMES_DIR, exist_ok=True)
     os.makedirs(PNGS_DIR, exist_ok=True)
     os.makedirs(FINAL_FRAMES_DIR, exist_ok=True)
-    
+
     # Text prompt to type
     prompt = "I feel really anxious and overwhelmed right now..."
-    
+
     # 1. Close-up typing frames (zoom 1.85x centered on input box at bottom)
     # 22 frames = 2.2 seconds smooth character-by-character typing
     typing_close_frames = []
     total_type_frames = 22
     for i in range(total_type_frames):
-        chars = int(min(len(prompt), math.ceil((i + 1) / total_type_frames * len(prompt))))
+        chars = int(
+            min(len(prompt), math.ceil((i + 1) / total_type_frames * len(prompt)))
+        )
         text = prompt[:chars]
-        typing_close_frames.append((f'chat_type_close_{i:02d}', get_chat_html(
-            typed_text=text,
-            zoom_factor=1.85,
-            zoom_origin="50% 90%"
-        )))
-        
+        typing_close_frames.append(
+            (
+                f"chat_type_close_{i:02d}",
+                get_chat_html(typed_text=text, zoom_factor=1.85, zoom_origin="50% 90%"),
+            )
+        )
+
     # 2. Camera zoom-out transition frames (pull back from close-up to full wide UI)
     # 6 frames = 0.6 seconds smooth ease-out pull back
     zoomout_frames = []
@@ -370,44 +395,53 @@ def main():
         # ease-in-out curve
         ease = 0.5 - 0.5 * math.cos(math.pi * t)
         zoom = 1.85 - 0.85 * ease
-        zoomout_frames.append((f'chat_zoomout_{i:02d}', get_chat_html(
-            typed_text=prompt,
-            zoom_factor=zoom,
-            zoom_origin="50% 90%"
-        )))
-        
+        zoomout_frames.append(
+            (
+                f"chat_zoomout_{i:02d}",
+                get_chat_html(
+                    typed_text=prompt, zoom_factor=zoom, zoom_origin="50% 90%"
+                ),
+            )
+        )
+
     # 3. User message posted in wide UI (4 frames = 0.4 seconds)
     user_posted_frames = []
     for i in range(4):
-        user_posted_frames.append((f'chat_user_{i:02d}', get_chat_html(
-            show_user_msg=True,
-            zoom_factor=1.0
-        )))
-        
+        user_posted_frames.append(
+            (f"chat_user_{i:02d}", get_chat_html(show_user_msg=True, zoom_factor=1.0))
+        )
+
     # 4. Assistant responds with supportive message & breathing action (16 frames = 1.6 seconds)
     ast_text = "I hear you. Let's take a slow breath together and ground yourself with a calming practice."
     ast_frames = []
     for i in range(16):
-        show_click = (i >= 11)
-        ast_frames.append((f'chat_ast_{i:02d}', get_chat_html(
-            show_user_msg=True,
-            show_assistant_msg=True,
-            assistant_text=ast_text,
-            show_cursor_click=show_click,
-            zoom_factor=1.0
-        )))
-        
+        show_click = i >= 11
+        ast_frames.append(
+            (
+                f"chat_ast_{i:02d}",
+                get_chat_html(
+                    show_user_msg=True,
+                    show_assistant_msg=True,
+                    assistant_text=ast_text,
+                    show_cursor_click=show_click,
+                    zoom_factor=1.0,
+                ),
+            )
+        )
+
     # 5. Breathing Inhale Sequence (50 frames = 5.0 seconds unaccelerated, 1s per number 1..5)
     particles = []
     for i in range(35):
-        particles.append({
-            'size': 2 + (i % 4),
-            'left': (i * 2.85 + 3) % 96,
-            'hue': 240 + (i % 40),
-            'start_y': (i * 27 + 50) % 850,
-            'speed': 30 + (i % 5) * 10
-        })
-        
+        particles.append(
+            {
+                "size": 2 + (i % 4),
+                "left": (i * 2.85 + 3) % 96,
+                "hue": 240 + (i % 40),
+                "start_y": (i * 27 + 50) % 850,
+                "speed": 30 + (i % 5) * 10,
+            }
+        )
+
     breathe_frames = []
     total_b_frames = 50
     for i in range(total_b_frames):
@@ -416,88 +450,105 @@ def main():
         progress = i / (total_b_frames - 1)
         ease_progress = 0.5 - 0.5 * math.cos(math.pi * progress)
         scale = 1.0 + 0.6 * ease_progress
-        breathe_frames.append((f'breathe_{i:02d}', get_breathe_html(scale, count_num, t_sec, particles)))
+        breathe_frames.append(
+            (f"breathe_{i:02d}", get_breathe_html(scale, count_num, t_sec, particles))
+        )
 
-    all_specs = typing_close_frames + zoomout_frames + user_posted_frames + ast_frames + breathe_frames
+    all_specs = (
+        typing_close_frames
+        + zoomout_frames
+        + user_posted_frames
+        + ast_frames
+        + breathe_frames
+    )
     print(f"Total base frames to render: {len(all_specs)}")
-    
+
     with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
         futures = [executor.submit(render_one, name, html) for name, html in all_specs]
         for f in concurrent.futures.as_completed(futures):
             f.result()
-            
+
     print("All base frames rendered to PNG.")
-    
+
     # 6. Composite timeline with smooth dissolves
     timeline = []
-    
+
     # A. Close-up typing
     for name, _ in typing_close_frames:
-        timeline.append(os.path.join(PNGS_DIR, f'{name}.png'))
+        timeline.append(os.path.join(PNGS_DIR, f"{name}.png"))
     # B. Zoom-out pull-back
     for name, _ in zoomout_frames:
-        timeline.append(os.path.join(PNGS_DIR, f'{name}.png'))
+        timeline.append(os.path.join(PNGS_DIR, f"{name}.png"))
     # C. User message
     for name, _ in user_posted_frames:
-        timeline.append(os.path.join(PNGS_DIR, f'{name}.png'))
+        timeline.append(os.path.join(PNGS_DIR, f"{name}.png"))
     # D. Assistant response
     for name, _ in ast_frames:
-        timeline.append(os.path.join(PNGS_DIR, f'{name}.png'))
-        
+        timeline.append(os.path.join(PNGS_DIR, f"{name}.png"))
+
     # E. Dissolve 1: Wide chat -> Fullscreen Forest Breathing Portal (8 frames)
-    last_chat_img = Image.open(timeline[-1]).convert('RGB')
-    first_breathe_img = Image.open(os.path.join(PNGS_DIR, f'{breathe_frames[0][0]}.png')).convert('RGB')
-    
+    last_chat_img = Image.open(timeline[-1]).convert("RGB")
+    first_breathe_img = Image.open(
+        os.path.join(PNGS_DIR, f"{breathe_frames[0][0]}.png")
+    ).convert("RGB")
+
     dissolve1_frames = []
     for step in range(1, 9):
         alpha = step / 9.0
         blended = Image.blend(last_chat_img, first_breathe_img, alpha)
-        diss_path = os.path.join(FINAL_FRAMES_DIR, f'dissolve1_{step:02d}.png')
+        diss_path = os.path.join(FINAL_FRAMES_DIR, f"dissolve1_{step:02d}.png")
         blended.save(diss_path)
         dissolve1_frames.append(diss_path)
-        
+
     timeline.extend(dissolve1_frames)
-    
+
     # F. Breathing Inhale practice
     for name, _ in breathe_frames:
-        timeline.append(os.path.join(PNGS_DIR, f'{name}.png'))
-        
+        timeline.append(os.path.join(PNGS_DIR, f"{name}.png"))
+
     # G. Dissolve 2: Fully expanded breath -> Close-up typing start (8 frames) for seamless loop
-    last_breathe_img = Image.open(timeline[-1]).convert('RGB')
-    first_close_img = Image.open(os.path.join(PNGS_DIR, f'{typing_close_frames[0][0]}.png')).convert('RGB')
-    
+    last_breathe_img = Image.open(timeline[-1]).convert("RGB")
+    first_close_img = Image.open(
+        os.path.join(PNGS_DIR, f"{typing_close_frames[0][0]}.png")
+    ).convert("RGB")
+
     dissolve2_frames = []
     for step in range(1, 9):
         alpha = step / 9.0
         blended = Image.blend(last_breathe_img, first_close_img, alpha)
-        diss_path = os.path.join(FINAL_FRAMES_DIR, f'dissolve2_{step:02d}.png')
+        diss_path = os.path.join(FINAL_FRAMES_DIR, f"dissolve2_{step:02d}.png")
         blended.save(diss_path)
         dissolve2_frames.append(diss_path)
-        
+
     timeline.extend(dissolve2_frames)
-    
+
     print(f"Total timeline frames: {len(timeline)}")
-    
+
     # Save ordered sequence for ffmpeg
     for idx, src_path in enumerate(timeline):
-        dst_path = os.path.join(FINAL_FRAMES_DIR, f'seq_{idx:04d}.png')
+        dst_path = os.path.join(FINAL_FRAMES_DIR, f"seq_{idx:04d}.png")
         img = Image.open(src_path)
         img.save(dst_path)
-        
+
     print("Compiling final optimized GIF with ffmpeg...")
-    output_gif = os.path.join(PROJECT_ROOT, 'assets', 'cbt-assistant-demo.gif')
-    
+    output_gif = os.path.join(PROJECT_ROOT, "assets", "cbt-assistant-demo.gif")
+
     cmd = [
-        'ffmpeg', '-y',
-        '-framerate', '10',
-        '-i', os.path.join(FINAL_FRAMES_DIR, 'seq_%04d.png'),
-        '-filter_complex', '[0:v] split [a][b];[a] palettegen=max_colors=192:stats_mode=single [p];[b][p] paletteuse=dither=bayer:bayer_scale=3:diff_mode=rectangle',
-        output_gif
+        "ffmpeg",
+        "-y",
+        "-framerate",
+        "10",
+        "-i",
+        os.path.join(FINAL_FRAMES_DIR, "seq_%04d.png"),
+        "-filter_complex",
+        "[0:v] split [a][b];[a] palettegen=max_colors=192:stats_mode=single [p];[b][p] paletteuse=dither=bayer:bayer_scale=3:diff_mode=rectangle",
+        output_gif,
     ]
     subprocess.run(cmd, check=True)
-    
+
     size_mb = os.path.getsize(output_gif) / (1024 * 1024)
     print(f"Cinematic Demo GIF generated successfully: {output_gif} ({size_mb:.2f} MB)")
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

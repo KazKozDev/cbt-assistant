@@ -109,6 +109,7 @@ const UI_TRANSLATIONS = {
         ollama_model_label: 'Модель для чата',
         ollama_model_loading: 'Загрузка моделей…',
         ollama_model_empty: 'На сервере Ollama нет установленных моделей',
+        ollama_model_embedding_only: 'только embeddings',
         ollama_model_unavailable: 'Текущая модель недоступна на сервере',
         ollama_model_load_error: 'Не удалось получить список моделей с сервера Ollama',
         ollama_model_save_error: 'Не удалось переключить модель',
@@ -249,6 +250,7 @@ const UI_TRANSLATIONS = {
         ollama_model_label: 'Chat model',
         ollama_model_loading: 'Loading models…',
         ollama_model_empty: 'No installed models found on the Ollama server',
+        ollama_model_embedding_only: 'embeddings only',
         ollama_model_unavailable: 'The current model is unavailable on the server',
         ollama_model_load_error: 'Could not load models from the Ollama server',
         ollama_model_save_error: 'Could not switch the model',
@@ -647,12 +649,19 @@ function stopMicRecognition(placeholderKey = 'input_placeholder_idle') {
         try { rec.stop(); } catch (error) { /* Recognition is already stopped. */ }
     }
 }
+window.stopMicInput = stopMicRecognition;
+
+const isSafariSpeech = /Safari/i.test(navigator.userAgent) && !/Chrome|CriOS|Edg/i.test(navigator.userAgent);
 
 if (window.SpeechRecognition || window.webkitSpeechRecognition) {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     rec = new SR();
-    rec.continuous = true;
+    // Safari may start the microphone with continuous=true but never emit
+    // result events. One-shot recognition still emits the transcript; onend
+    // below restarts it while the user keeps the button active.
+    rec.continuous = !isSafariSpeech;
     rec.interimResults = true;
+    rec.maxAlternatives = 1;
 
     rec.onstart = () => {
         micRecognitionError = null;
@@ -709,12 +718,27 @@ async function toggleMic() {
     setMicUi(true, 'input_placeholder_listening');
 
     try {
+        rec.lang = getCurrentLanguage() === 'en' ? 'en-US' : 'ru-RU';
+
+        // WebKit requires SpeechRecognition.start() to stay inside the
+        // original click gesture. Awaiting getUserMedia first makes Safari
+        // open the microphone but silently drop all recognition results.
+        if (isSafariSpeech) {
+            rec.start();
+            return;
+        }
+
         if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            const stream = await navigator.mediaDevices.getUserMedia({
+                audio: {
+                    echoCancellation: true,
+                    noiseSuppression: true,
+                    autoGainControl: true,
+                },
+            });
             stream.getTracks().forEach(track => track.stop());
         }
         if (!isRec) return;
-        rec.lang = getCurrentLanguage() === 'en' ? 'en-US' : 'ru-RU';
         rec.start();
     } catch (error) {
         const denied = error && (error.name === 'NotAllowedError' || error.name === 'SecurityError');
@@ -821,6 +845,11 @@ async function playAssistantSpeech(text, language) {
 
     if (!cleanText) return;
 
+    // Never let speech recognition transcribe the assistant's own voice.
+    // The recognition service owns the microphone stream, so browser echo
+    // cancellation constraints cannot reliably protect this interval.
+    if (isRec) stopMicRecognition();
+
     try {
         await playRemoteTts(cleanText, lang, getPreferredTtsVoice(lang));
     } catch (err) {
@@ -854,6 +883,7 @@ function toggleTTS() {
     ttsEnabled = !ttsEnabled;
     let btn = document.getElementById('ttsBtn');
     if (ttsEnabled) {
+        if (isRec) stopMicRecognition();
         btn.style.color = 'var(--accent)';
         btn.setAttribute('aria-pressed', 'true');
         btn.innerHTML = '<i data-lucide="volume-2" style="width:18px;"></i>';
@@ -1916,8 +1946,11 @@ async function loadOllamaModels() {
         models.forEach(function (model) {
             if (!model || !model.name) return;
             const option = document.createElement('option');
+            const capabilities = Array.isArray(model.capabilities) ? model.capabilities : null;
+            const supportsChat = !capabilities || capabilities.includes('completion');
             option.value = model.name;
-            option.textContent = model.name;
+            option.textContent = supportsChat ? model.name : model.name + ' — ' + t('ollama_model_embedding_only');
+            option.disabled = !supportsChat;
             option.selected = model.name === _activeOllamaModel;
             select.appendChild(option);
         });
@@ -1936,7 +1969,10 @@ async function loadOllamaModels() {
             select.prepend(option);
             setOllamaModelStatus(t('ollama_model_unavailable'), true);
         }
-        select.disabled = models.length === 0;
+        select.disabled = !models.some(function (model) {
+            const capabilities = Array.isArray(model && model.capabilities) ? model.capabilities : null;
+            return model && model.name && (!capabilities || capabilities.includes('completion'));
+        });
     } catch (error) {
         select.innerHTML = '<option>' + t('ollama_model_load_error') + '</option>';
         setOllamaModelStatus(t('ollama_model_load_error'), true);

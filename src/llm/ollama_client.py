@@ -22,12 +22,15 @@ class OllamaClient(BaseLLMClient):
         self.base_url = base_url
         self.model = model
 
-    async def chat(self, messages: list[dict], options: dict = None, tools: list = None) -> dict:
+    async def chat(
+        self, messages: list[dict], options: dict = None, tools: list = None
+    ) -> dict:
         opts = options or {"temperature": 0.7, "top_p": 0.9, "num_predict": 1024}
         payload = {
             "model": self.model,
             "messages": messages,
             "stream": False,
+            "think": False,
             "options": opts,
         }
         if tools:
@@ -45,12 +48,15 @@ class OllamaClient(BaseLLMClient):
                 message["content"] = ContentCleaner.strip_think_tags(content)
             return message
 
-    async def chat_stream(self, messages: list[dict], options: dict = None, tools: list = None):
+    async def chat_stream(
+        self, messages: list[dict], options: dict = None, tools: list = None
+    ):
         opts = options or {"temperature": 0.7, "top_p": 0.9, "num_predict": 1024}
         payload = {
             "model": self.model,
             "messages": messages,
             "stream": True,
+            "think": False,
             "options": opts,
         }
         if tools:

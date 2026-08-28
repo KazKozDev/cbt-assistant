@@ -146,3 +146,41 @@ def test_content_cleaner():
     assert cleaner.strip_think_tags("<think>unfinished") == "<think>unfinished"
     assert cleaner.strip_think_tags("Normally text") == "Normally text"
     assert cleaner.strip_think_tags("<think>A</think>B<think>C</think>D") == "BD"
+
+
+@pytest.mark.asyncio
+async def test_real_fastembed_retrieval_and_small_talk_rejection(tmp_path):
+    kb_path = tmp_path / "cbt_kb"
+    kb_path.mkdir()
+    (kb_path / "cbt.md").write_text(
+        "# Протоколы КПТ\n\n"
+        "## Контроль стимулов при бессоннице\n"
+        "Если не удается заснуть в течение двадцати минут, встаньте с кровати и перейдите в другую комнату. "
+        "Займитесь спокойной деятельностью при приглушенном свете и возвращайтесь в постель только при сонливости.\n\n"
+        "## Шкала Бека BDI-II\n"
+        "Шкала депрессии Бека (BDI-II) представляет собой опросник из двадцати одного пункта для оценки выраженности "
+        "депрессивной симптоматики от нуля до шестидесяти трех баллов.",
+        encoding="utf-8",
+    )
+    rag = SemanticRAG(
+        kb_dir=kb_path,
+        cache_path=tmp_path / "rag_index.npz",
+        trace_path=tmp_path / "rag_traces.jsonl",
+        score_threshold=0.45,
+    )
+    await rag.load_and_embed()
+    assert rag.state == "ready"
+    assert len(rag.chunks) == 2
+
+    # Small talk query should NOT match anything above threshold 0.45
+    greeting_res = await rag.search_with_trace("как твои дела", top_k=2)
+    assert greeting_res["results"] == []
+    assert greeting_res["trace"]["status"] == "no_relevant_context"
+
+    # Clinical query SHOULD match
+    clinical_res = await rag.search_with_trace(
+        "что делать если не могу уснуть двадцать минут", top_k=1
+    )
+    assert len(clinical_res["results"]) == 1
+    assert "Контроль стимулов" in clinical_res["results"][0]["chunk"]["section_path"]
+    assert clinical_res["trace"]["status"] == "grounded"

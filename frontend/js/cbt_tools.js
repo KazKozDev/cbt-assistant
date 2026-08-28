@@ -1555,6 +1555,77 @@ function addActivityFromAI(txt) {
 }
 window.addActivityFromAI = addActivityFromAI;
 
+function addThoughtRecordFromAI(rec) {
+    if (!rec) return;
+    var btnMessage = document.getElementById('messages');
+    var div = document.createElement('div');
+    div.className = 'msg assistant';
+    var isEn = typeof currentChatLanguage === 'function' && currentChatLanguage() === 'en';
+    var label = isEn ? 'Thought Diary' : 'Дневник мыслей';
+    var title = rec.thought || rec.situation || '';
+    var text = isEn
+        ? '📝 Added entry to <a href="#" onclick="openThoughtHistoryModal(); return false;" style="color:var(--accent);text-decoration:underline;">' + label + '</a>: <b>"' + title + '"</b>'
+        : '📝 Запись добавлена в <a href="#" onclick="openThoughtHistoryModal(); return false;" style="color:var(--accent);text-decoration:underline;">' + label + '</a>: <b>«' + title + '»</b>';
+    div.innerHTML = '<div class="msg-avatar"><i data-lucide="book-open" style="width:18px;"></i></div><div class="msg-content"><p>' + text + '</p></div>';
+    if (btnMessage) {
+        btnMessage.appendChild(div);
+        if (window.lucide) window.lucide.createIcons();
+        btnMessage.scrollTop = btnMessage.scrollHeight;
+    }
+}
+window.addThoughtRecordFromAI = addThoughtRecordFromAI;
+
+function addSleepLogFromAI(log) {
+    if (!log) return;
+    var bedParts = String(log.bed || '').split(':').map(Number);
+    var wakeParts = String(log.wake || '').split(':').map(Number);
+    var calculatedDuration = 8.0;
+    if (bedParts.length === 2 && wakeParts.length === 2 && bedParts.every(Number.isFinite) && wakeParts.every(Number.isFinite)) {
+        var bedMinutes = bedParts[0] * 60 + bedParts[1];
+        var wakeMinutes = wakeParts[0] * 60 + wakeParts[1];
+        if (wakeMinutes < bedMinutes) wakeMinutes += 24 * 60;
+        calculatedDuration = Number(((wakeMinutes - bedMinutes) / 60).toFixed(1));
+    }
+    var serverId = log.id === undefined || log.id === null ? null : String(log.id);
+    var isoDate = log.isoDate || new Date().toISOString().slice(0, 10);
+    var entry = {
+        id: serverId ? 'sleep_ai_' + serverId : makeLocalEntryId('sleep'),
+        serverId: serverId,
+        bed: log.bed,
+        wake: log.wake,
+        qual: log.qual ?? 7,
+        awk: log.awk ?? 0,
+        notes: log.notes || '',
+        durHrs: log.durHrs ?? calculatedDuration,
+        isoDate: isoDate,
+        date: new Date(isoDate + 'T12:00:00').toLocaleDateString(typeof cbtLocale === 'function' ? cbtLocale() : 'ru-RU')
+    };
+    sleepLog = sleepLog.filter(function (existing) {
+        return !serverId || String(existing.serverId || '') !== serverId;
+    });
+    sleepLog.unshift(entry);
+    if (sleepLog.length > 30) sleepLog.pop();
+    persistSleepLog();
+    if (document.getElementById('sleepHistModal')?.style.display === 'flex') openSleepHistoryModal();
+
+    var btnMessage = document.getElementById('messages');
+    var div = document.createElement('div');
+    div.className = 'msg assistant';
+    var isEn = typeof currentChatLanguage === 'function' && currentChatLanguage() === 'en';
+    var label = isEn ? 'Sleep Diary' : 'Дневник сна';
+    var text = isEn
+        ? '🌙 Saved entry to <a href="#" onclick="openSleepHistoryModal(); return false;" style="color:var(--accent);text-decoration:underline;">' + label + '</a> (' + log.bed + ' – ' + log.wake + ', quality: ' + (log.qual ?? 7) + '/10)'
+        : '🌙 Запись сохранена в <a href="#" onclick="openSleepHistoryModal(); return false;" style="color:var(--accent);text-decoration:underline;">' + label + '</a> (' + log.bed + ' – ' + log.wake + ', качество: ' + (log.qual ?? 7) + '/10)';
+    div.innerHTML = '<div class="msg-avatar"><i data-lucide="moon" style="width:18px;"></i></div><div class="msg-content"><p>' + text + '</p></div>';
+    if (btnMessage) {
+        btnMessage.appendChild(div);
+        if (window.lucide) window.lucide.createIcons();
+        btnMessage.scrollTop = btnMessage.scrollHeight;
+    }
+}
+window.addSleepLogFromAI = addSleepLogFromAI;
+
+
 function toggleActivity(i) {
     var wasNotDone = !activities[i].done;
     activities[i].done = !activities[i].done;

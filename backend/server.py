@@ -6,6 +6,7 @@ FastAPI server integrating Modular genAI components.
 
 import os
 import json
+from datetime import datetime
 from pathlib import Path
 from contextlib import asynccontextmanager
 import yaml
@@ -17,7 +18,7 @@ sys.path.insert(0, str(PROJECT_ROOT))
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException  # noqa: E402
 from fastapi.staticfiles import StaticFiles  # noqa: E402
-from fastapi.responses import FileResponse, PlainTextResponse, Response  # noqa: E402
+from fastapi.responses import PlainTextResponse, Response  # noqa: E402
 from fastapi.middleware.cors import CORSMiddleware  # noqa: E402
 from pydantic import BaseModel  # noqa: E402
 
@@ -34,7 +35,7 @@ from src.memory.profile import (  # noqa: E402
 from src import __version__  # noqa: E402
 
 # ─── Configuration ───────────────────────────────────────────────
-OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
+OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://127.0.0.1:11434")
 
 # Load configs
 CONFIG_DIR = Path(__file__).parent.parent / "config"
@@ -42,9 +43,15 @@ with open(CONFIG_DIR / "model_config.yaml", "r", encoding="utf-8") as f:
     model_config = yaml.safe_load(f)["models"]
 
 DEFAULT_OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", model_config["qwen"]["model_name"])
+EMBED_CONFIG = model_config.get("embeddings", {})
 EMBED_MODEL = os.getenv(
-    "RAG_EMBED_MODEL", model_config["embeddings"]["model_name"]
+    "RAG_EMBED_MODEL",
+    EMBED_CONFIG.get(
+        "model_name", "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
+    ),
 )
+DEFAULT_SCORE_THRESHOLD = float(EMBED_CONFIG.get("score_threshold", 0.45))
+SCORE_THRESHOLD = float(os.getenv("RAG_SCORE_THRESHOLD", str(DEFAULT_SCORE_THRESHOLD)))
 LLM_OPTIONS = {
     "temperature": model_config["qwen"]["temperature"],
     "top_p": model_config["qwen"]["top_p"],
@@ -86,11 +93,11 @@ OLLAMA_MODEL = load_selected_model()
 llm_client = OllamaClient(OLLAMA_BASE_URL, OLLAMA_MODEL)
 kb = SemanticRAG(
     KNOWLEDGE_BASE_DIR,
-    OLLAMA_BASE_URL,
-    EMBED_MODEL,
+    ollama_url=OLLAMA_BASE_URL,
+    embed_model=EMBED_MODEL,
     cache_path=DATA_DIR / "rag_index.npz",
     trace_path=DATA_DIR / "rag_traces.jsonl",
-    score_threshold=float(os.getenv("RAG_SCORE_THRESHOLD", "0.35")),
+    score_threshold=SCORE_THRESHOLD,
 )
 sessions = SQLiteSessionManager(DATA_DIR / "cbt_sessions.db")
 prompt_manager = PromptManager(CONFIG_DIR / "prompts.yaml")
@@ -118,6 +125,7 @@ app.add_middleware(
 )
 
 # ─── REST Endpoints ─────────────────────────────────────────────
+
 
 class ChatRequest(BaseModel):
     message: str
@@ -268,6 +276,99 @@ def get_user_data_tools():
                 },
             },
         },
+        {
+            "type": "function",
+            "function": {
+                "name": "add_thought_record",
+                "description": (
+                    "Добавить новую запись в Дневник мыслей (Thought Diary) пользователя, "
+                    "когда разобрали автоматическую мысль, эмоцию, искажение и сформулировали "
+                    "рациональный ответ, либо по прямой просьбе пользователя."
+                ),
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "situation": {
+                            "type": "string",
+                            "description": "Ситуация или триггер, вызвавший переживание (например, 'Разговор с коллегами').",
+                        },
+                        "thought": {
+                            "type": "string",
+                            "description": "Автоматическая негативная мысль (например, 'Я точно всё испорчу').",
+                        },
+                        "emotion": {
+                            "type": "string",
+                            "description": "Основная эмоция (например, 'Тревога', 'Грусть', 'Стыд').",
+                        },
+                        "intensity": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 10,
+                            "description": "Интенсивность эмоции от 1 до 10 (по умолчанию 7).",
+                        },
+                        "distortion": {
+                            "type": "string",
+                            "description": "Когнитивное искажение (например, 'Катастрофизация', 'Черно-белое мышление', 'Чтение мыслей').",
+                        },
+                        "rational_response": {
+                            "type": "string",
+                            "description": "Рациональный ответ / адаптивная поддерживающая мысль.",
+                        },
+                    },
+                    "required": [
+                        "situation",
+                        "thought",
+                        "emotion",
+                        "rational_response",
+                    ],
+                },
+            },
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "add_sleep_diary_record",
+                "description": (
+                    "Отдельно от Дневника мыслей добавить запись именно в Дневник сна "
+                    "пользователя: время отхода ко сну, подъем, качество, пробуждения и "
+                    "заметки. Используй этот инструмент, а не add_thought_record, когда "
+                    "пользователь просит записать сон или сообщает данные для дневника сна."
+                ),
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "bed": {
+                            "type": "string",
+                            "description": "Время отхода ко сну в формате ЧЧ:ММ (например, '23:30').",
+                        },
+                        "wake": {
+                            "type": "string",
+                            "description": "Время подъема в формате ЧЧ:ММ (например, '07:30').",
+                        },
+                        "quality": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 10,
+                            "description": "Субъективное качество сна от 1 до 10 (по умолчанию 7).",
+                        },
+                        "awakenings": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "description": "Количество ночных пробуждений (по умолчанию 0).",
+                        },
+                        "notes": {
+                            "type": "string",
+                            "description": "Краткие заметки о сне или утреннем самочувствии.",
+                        },
+                        "date": {
+                            "type": "string",
+                            "description": "Дата сна в формате ГГГГ-ММ-ДД (опционально, по умолчанию текущий день).",
+                        },
+                    },
+                    "required": ["bed", "wake"],
+                },
+            },
+        },
     ]
 
 
@@ -323,14 +424,44 @@ def serialize_rag_context(results: list[dict], trace: dict) -> list[dict]:
 def requires_grounded_clinical_answer(message: str) -> bool:
     normalized = message.casefold()
     clinical_terms = (
-        "тревог", "депресс", "бессон", "сон", "паник", "эмоц", "псих",
-        "самоповреж", "суицид", "терап", "кпт", "cbt", "anxiety", "depression",
-        "insomnia", "sleep", "panic", "mental health", "self-harm", "suicid",
+        "тревог",
+        "депресс",
+        "бессон",
+        "сон",
+        "паник",
+        "эмоц",
+        "псих",
+        "самоповреж",
+        "суицид",
+        "терап",
+        "кпт",
+        "cbt",
+        "anxiety",
+        "depression",
+        "insomnia",
+        "sleep",
+        "panic",
+        "mental health",
+        "self-harm",
+        "suicid",
     )
     advice_terms = (
-        "что делать", "как ", "техника", "упражнен", "протокол", "совет",
-        "леч", "поможет", "should i", "what should", "how ", "exercise",
-        "protocol", "treat", "therapy", "help with",
+        "что делать",
+        "как ",
+        "техника",
+        "упражнен",
+        "протокол",
+        "совет",
+        "леч",
+        "поможет",
+        "should i",
+        "what should",
+        "how ",
+        "exercise",
+        "protocol",
+        "treat",
+        "therapy",
+        "help with",
     )
     return any(term in normalized for term in clinical_terms) and any(
         term in normalized for term in advice_terms
@@ -377,9 +508,7 @@ async def prepare_chat_messages(
     retrieval = await kb.search_with_trace(message, top_k=3)
     context = retrieval["results"]
     trace = retrieval["trace"]
-    trace["must_abstain"] = (
-        not context and requires_grounded_clinical_answer(message)
-    )
+    trace["must_abstain"] = not context and requires_grounded_clinical_answer(message)
     session = sessions.get_or_create(session_id)
     system_prompt = prompt_manager.build_system_prompt(
         context,
@@ -404,16 +533,22 @@ def execute_app_tool(session_id: str, tool_call: dict) -> tuple[str, dict | None
     name = function.get("name")
     args = function.get("arguments", {})
     if name == "get_user_sleep_history":
-        return json.dumps(
-            sessions.get_sleep_logs(session_id, limit=args.get("days", 14)),
-            ensure_ascii=False,
-        ), None
+        return (
+            json.dumps(
+                sessions.get_sleep_logs(session_id, limit=args.get("days", 14)),
+                ensure_ascii=False,
+            ),
+            None,
+        )
     if name == "get_user_test_results":
         return json.dumps(sessions.get_tests(session_id), ensure_ascii=False), None
     if name == "get_user_activities":
-        return json.dumps(
-            sessions.get_activities(session_id, limit=30), ensure_ascii=False
-        ), None
+        return (
+            json.dumps(
+                sessions.get_activities(session_id, limit=30), ensure_ascii=False
+            ),
+            None,
+        )
     if name == "add_user_activity":
         text = args.get("activity_text", "")
         return f"Activity queued in the interface: {text}", {
@@ -452,6 +587,85 @@ def execute_app_tool(session_id: str, tool_call: dict) -> tuple[str, dict | None
         return f"The {test_type} test was opened in the interface.", {
             "type": "open_test",
             "test_type": test_type,
+        }
+    if name == "add_thought_record":
+        situation = args.get("situation", "Диалог с ассистентом")
+        thought = args.get("thought", "")
+        emotion = args.get("emotion", "Тревога")
+        try:
+            intensity = int(args.get("intensity", 7))
+        except (TypeError, ValueError):
+            intensity = 7
+        intensity = max(1, min(intensity, 10))
+        distortion = args.get("distortion", "Автоматическая мысль")
+        rational_response = args.get("rational_response", "")
+        record_id = sessions.add_thought_record(
+            session_id=session_id,
+            situation=situation,
+            thought=thought,
+            emotion=emotion,
+            intensity=intensity,
+            distortion=distortion,
+            rational_response=rational_response,
+        )
+        return f"Thought record #{record_id} saved to diary.", {
+            "type": "add_thought_record",
+            "record": {
+                "id": record_id,
+                "situation": situation,
+                "thought": thought,
+                "emotion": emotion,
+                "intensity": intensity,
+                "distortion": distortion,
+                "rational_response": rational_response,
+                "timestamp": datetime.now().isoformat(),
+            },
+        }
+    if name in {"add_sleep_diary_record", "add_sleep_record", "add_sleep_log"}:
+        bed = args.get("bed", "23:00")
+        wake = args.get("wake", "07:00")
+        try:
+            quality = int(args.get("quality", 7))
+        except (TypeError, ValueError):
+            quality = 7
+        quality = max(1, min(quality, 10))
+        try:
+            awakenings = int(args.get("awakenings", 0))
+        except (TypeError, ValueError):
+            awakenings = 0
+        notes = args.get("notes", "")
+        date_str = args.get("date")
+        try:
+            bed_time = datetime.strptime(bed.strip(), "%H:%M")
+            wake_time = datetime.strptime(wake.strip(), "%H:%M")
+            duration_hours = (wake_time - bed_time).total_seconds() / 3600.0
+            if duration_hours < 0:
+                duration_hours += 24.0
+            duration_hours = round(duration_hours, 1)
+        except (AttributeError, TypeError, ValueError):
+            duration_hours = 8.0
+        log_id = sessions.add_sleep_log(
+            session_id=session_id,
+            bed=bed,
+            wake=wake,
+            awk=awakenings,
+            qual=quality,
+            notes=notes,
+            dur_hrs=duration_hours,
+            iso_date=date_str,
+        )
+        return f"Sleep record #{log_id} saved to sleep diary.", {
+            "type": "add_sleep_log",
+            "log": {
+                "id": log_id,
+                "bed": bed,
+                "wake": wake,
+                "qual": quality,
+                "awk": awakenings,
+                "notes": notes,
+                "durHrs": duration_hours,
+                "isoDate": date_str or datetime.now().strftime("%Y-%m-%d"),
+            },
         }
     return f"Error: Unknown tool {name}", None
 
@@ -571,16 +785,28 @@ async def chat_stream(req: ChatRequest):
                             )
                             for tc in tool_calls:
                                 fn_name = tc.get("function", {}).get("name")
-                                tool_content, event = execute_app_tool(req.session_id, tc)
-                                payload = {"client_event": event} if event else {"tool_call": fn_name}
+                                tool_content, event = execute_app_tool(
+                                    req.session_id, tc
+                                )
+                                payload = (
+                                    {"client_event": event}
+                                    if event
+                                    else {"tool_call": fn_name}
+                                )
                                 yield f"data: {json.dumps(payload)}\n\n"
                                 messages.append(
-                                    {"role": "tool", "content": tool_content, "name": fn_name}
+                                    {
+                                        "role": "tool",
+                                        "content": tool_content,
+                                        "name": fn_name,
+                                    }
                                 )
                             break
                         else:
                             clean = ContentCleaner.strip_think_tags(full_response)
-                            cited = ensure_rag_citations(clean, context_used, req.language)
+                            cited = ensure_rag_citations(
+                                clean, context_used, req.language
+                            )
                             citation_suffix = cited[len(clean) :]
                             if citation_suffix:
                                 yield f"data: {json.dumps({'token': citation_suffix})}\n\n"
@@ -762,7 +988,9 @@ def _build_insights_prompt(req: InsightsRequest) -> str:
     # Absence of data = not tracked, NOT a negative signal.
 
     if req.mood_log:
-        recent = sorted(req.mood_log, key=lambda x: x.get("date", ""), reverse=True)[:14]
+        recent = sorted(req.mood_log, key=lambda x: x.get("date", ""), reverse=True)[
+            :14
+        ]
         scores = [e.get("score") for e in recent if e.get("score") is not None]
         if scores:
             avg = round(sum(scores) / len(scores), 1)
@@ -778,7 +1006,9 @@ def _build_insights_prompt(req: InsightsRequest) -> str:
                 )
 
     if req.sleep_log:
-        recent_sleep = sorted(req.sleep_log, key=lambda x: x.get("isoDate", ""), reverse=True)[:7]
+        recent_sleep = sorted(
+            req.sleep_log, key=lambda x: x.get("isoDate", ""), reverse=True
+        )[:7]
         sleep_info = []
         for s in recent_sleep:
             hours = s.get("hours") or s.get("duration")
@@ -791,13 +1021,13 @@ def _build_insights_prompt(req: InsightsRequest) -> str:
         if sleep_info:
             if en:
                 sections.append(
-                    f"SLEEP (sleep journal — {len(sleep_info)} days):\n  " +
-                    "\n  ".join(sleep_info)
+                    f"SLEEP (sleep journal — {len(sleep_info)} days):\n  "
+                    + "\n  ".join(sleep_info)
                 )
             else:
                 sections.append(
-                    f"СОН (записи дневника сна — {len(sleep_info)} дней):\n  " +
-                    "\n  ".join(sleep_info)
+                    f"СОН (записи дневника сна — {len(sleep_info)} дней):\n  "
+                    + "\n  ".join(sleep_info)
                 )
 
     if req.activities:
@@ -813,24 +1043,36 @@ def _build_insights_prompt(req: InsightsRequest) -> str:
             )
 
     if req.phq_history:
-        recent_phq = sorted(req.phq_history, key=lambda x: x.get("date", ""), reverse=True)[:3]
-        phq_info = [f"PHQ-9: {e.get('score')} ({e.get('date', '')[:10]})" for e in recent_phq]
+        recent_phq = sorted(
+            req.phq_history, key=lambda x: x.get("date", ""), reverse=True
+        )[:3]
+        phq_info = [
+            f"PHQ-9: {e.get('score')} ({e.get('date', '')[:10]})" for e in recent_phq
+        ]
         if en:
             sections.append("PHQ-9 TESTS (depression):\n  " + "\n  ".join(phq_info))
         else:
             sections.append("ТЕСТЫ PHQ-9 (депрессия):\n  " + "\n  ".join(phq_info))
 
     if req.gad_history:
-        recent_gad = sorted(req.gad_history, key=lambda x: x.get("date", ""), reverse=True)[:3]
-        gad_info = [f"GAD-7: {e.get('score')} ({e.get('date', '')[:10]})" for e in recent_gad]
+        recent_gad = sorted(
+            req.gad_history, key=lambda x: x.get("date", ""), reverse=True
+        )[:3]
+        gad_info = [
+            f"GAD-7: {e.get('score')} ({e.get('date', '')[:10]})" for e in recent_gad
+        ]
         if en:
             sections.append("GAD-7 TESTS (anxiety):\n  " + "\n  ".join(gad_info))
         else:
             sections.append("ТЕСТЫ GAD-7 (тревога):\n  " + "\n  ".join(gad_info))
 
     if req.thought_records:
-        emotions = [t.get("emotion", "") for t in req.thought_records if t.get("emotion")]
-        distortions = [t.get("distortion", "") for t in req.thought_records if t.get("distortion")]
+        emotions = [
+            t.get("emotion", "") for t in req.thought_records if t.get("emotion")
+        ]
+        distortions = [
+            t.get("distortion", "") for t in req.thought_records if t.get("distortion")
+        ]
         if en:
             sections.append(
                 f"CBT THOUGHT JOURNAL ({len(req.thought_records)} entries):\n"
@@ -921,23 +1163,24 @@ async def generate_insights(req: InsightsRequest):
                 "temperature": 0.7,
                 "top_p": 0.9,
                 "num_predict": 800,
-            }
+            },
         )
         text = resp.get("content", "").strip()
         if not text:
             text = (
                 "Nothing definitive to notice yet — keep filling in your journal."
-                if en else
-                "Пока сложно заметить что-то определённое — продолжай вести записи."
+                if en
+                else "Пока сложно заметить что-то определённое — продолжай вести записи."
             )
         return {"insights": text, "has_data": True}
     except Exception as e:
         err_msg = (
             "Could not fetch insights right now."
-            if en else
-            "Не удалось получить наблюдения прямо сейчас."
+            if en
+            else "Не удалось получить наблюдения прямо сейчас."
         )
         return {"insights": err_msg, "has_data": False, "error": str(e)}
+
 
 @app.get("/api/knowledge/search")
 async def search_knowledge(q: str, top_k: int = 3):
@@ -992,15 +1235,16 @@ async def fetch_ollama_models() -> list[dict]:
         [
             model
             for model in models
-            if isinstance(model, dict)
-            and isinstance(model.get("name"), str)
-            and (
-                "capabilities" not in model
-                or "completion" in (model.get("capabilities") or [])
-            )
+            if isinstance(model, dict) and isinstance(model.get("name"), str)
         ],
         key=lambda model: model["name"].lower(),
     )
+
+
+def is_chat_model(model: dict) -> bool:
+    """Treat legacy Ollama entries as chat-capable unless capabilities say otherwise."""
+    capabilities = model.get("capabilities")
+    return not isinstance(capabilities, list) or "completion" in capabilities
 
 
 @app.get("/api/models")
@@ -1020,9 +1264,15 @@ async def select_ollama_model(request: ModelSelectionRequest):
         raise HTTPException(422, "Model name cannot be empty")
 
     available_models = await fetch_ollama_models()
-    available_names = {model["name"] for model in available_models}
-    if model_name not in available_names:
-        raise HTTPException(400, "The selected model is not installed on this Ollama server")
+    selected_model = next(
+        (model for model in available_models if model["name"] == model_name), None
+    )
+    if selected_model is None:
+        raise HTTPException(
+            400, "The selected model is not installed on this Ollama server"
+        )
+    if not is_chat_model(selected_model):
+        raise HTTPException(400, "The selected Ollama model does not support chat")
 
     try:
         persist_selected_model(model_name)
@@ -1055,32 +1305,37 @@ async def health():
         "rag": kb.get_status(),
     }
 
+
 @app.get("/api/report/{session_id}")
 async def get_session_report(session_id: str):
     import datetime
-    
+
     session = sessions.get_or_create(session_id)
     summary = session.get("summary", "Нет данных о сессии.")
     mood_log = session.get("mood_log", [])
     thought_records = session.get("thought_records", [])
-    
+
     report_lines = []
     report_lines.append("КЛИНИЧЕСКАЯ ВЫПИСКА ПАЦИЕНТА")
     report_lines.append("=" * 40)
-    report_lines.append(f"Дата выписки: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M')}")
+    report_lines.append(
+        f"Дата выписки: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M')}"
+    )
     report_lines.append(f"Идентификатор сессии: {session_id}")
     report_lines.append("")
     report_lines.append("--- РЕЗЮМЕ ТЕРАПИИ (ДОЛГОСРОЧНАЯ ПАМЯТЬ) ---")
     report_lines.append(summary if summary else "Резюме еще не сформировано.")
     report_lines.append("")
-    
+
     report_lines.append("--- ПОСЛЕДНИЕ ОЦЕНКИ НАСТРОЕНИЯ ---")
     if not mood_log:
         report_lines.append("Нет данных.")
     for m in mood_log[-10:]:
-        report_lines.append(f"{m.get('timestamp')[:19]}: {m.get('score')}/10 - {m.get('note', '')}")
+        report_lines.append(
+            f"{m.get('timestamp')[:19]}: {m.get('score')}/10 - {m.get('note', '')}"
+        )
     report_lines.append("")
-    
+
     report_lines.append("--- ДНЕВНИК МЫСЛЕЙ (ПОСЛЕДНИЕ ЗАПИСИ) ---")
     if not thought_records:
         report_lines.append("Нет данных.")
@@ -1088,11 +1343,13 @@ async def get_session_report(session_id: str):
         report_lines.append(f"[{tr.get('timestamp')[:19]}]")
         report_lines.append(f"Ситуация: {tr.get('situation', '')}")
         report_lines.append(f"Мысль: {tr.get('thought', '')}")
-        report_lines.append(f"Эмоция: {tr.get('emotion', '')} ({tr.get('intensity', '')}/10)")
+        report_lines.append(
+            f"Эмоция: {tr.get('emotion', '')} ({tr.get('intensity', '')}/10)"
+        )
         report_lines.append(f"Искажения: {tr.get('distortion', '')}")
         report_lines.append(f"Рациональный ответ: {tr.get('rational_response', '')}")
         report_lines.append("-" * 20)
-    
+
     # Also grab recent psychological tests
     tests = sessions.get_tests(session_id)
     report_lines.append("")
@@ -1100,15 +1357,18 @@ async def get_session_report(session_id: str):
     if not tests:
         report_lines.append("Нет данных.")
     for t in tests[:5]:
-        report_lines.append(f"[{t.get('iso_date')[:10]}] {t.get('test_name')}: {t.get('score')} баллов ({t.get('level')})")
-        
-    report_content = "\n".join(report_lines)
-    
-    return PlainTextResponse(
-        report_content, 
-        headers={"Content-Disposition": f"attachment; filename=cbt_report_{session_id}.txt"}
-    )
+        report_lines.append(
+            f"[{t.get('iso_date')[:10]}] {t.get('test_name')}: {t.get('score')} баллов ({t.get('level')})"
+        )
 
+    report_content = "\n".join(report_lines)
+
+    return PlainTextResponse(
+        report_content,
+        headers={
+            "Content-Disposition": f"attachment; filename=cbt_report_{session_id}.txt"
+        },
+    )
 
 
 # ─── WebSocket ───────────────────────────────────────────────────

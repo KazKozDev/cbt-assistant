@@ -14,7 +14,6 @@ import tempfile
 import time
 from typing import Any
 
-import httpx
 import numpy as np
 
 
@@ -31,17 +30,17 @@ class SemanticRAG:
     def __init__(
         self,
         kb_dir: Path,
-        ollama_url: str,
-        embed_model: str = "qwen3-embedding:4b",
+        ollama_url: str | None = None,
+        embed_model: str = "sentence-transformers/paraphrase-multilingual-mpnet-base-v2",
         *,
         cache_path: Path | None = None,
         trace_path: Path | None = None,
-        score_threshold: float = 0.35,
+        score_threshold: float = 0.46,
         max_chunk_chars: int = 1600,
         overlap_chars: int = 180,
     ):
         self.kb_dir = Path(kb_dir)
-        self.ollama_url = ollama_url.rstrip("/")
+        self.ollama_url = (ollama_url or "").rstrip("/")
         self.embed_model = embed_model
         self.cache_path = Path(cache_path) if cache_path else None
         self.trace_path = Path(trace_path) if trace_path else None
@@ -57,6 +56,7 @@ class SemanticRAG:
         self.loaded_from_cache = False
         self._index_lock = asyncio.Lock()
         self._recent_traces: deque[dict[str, Any]] = deque(maxlen=100)
+        self._embedding_engine: Any = None
 
     async def load_and_embed(self) -> None:
         """Build or restore the complete index, then swap it into service atomically."""
@@ -90,7 +90,9 @@ class SemanticRAG:
             except Exception as exc:
                 self.state = "failed" if not self.chunks else "degraded"
                 self.last_error = str(exc)
-                raise RAGIndexError(f"Could not build complete RAG index: {exc}") from exc
+                raise RAGIndexError(
+                    f"Could not build complete RAG index: {exc}"
+                ) from exc
 
             self.chunks, self.vectors = raw_chunks, matrix
             self.index_version = fingerprint
@@ -159,7 +161,9 @@ class SemanticRAG:
                 content = f"{pending}\n\n{content}"
                 pending = ""
             section_path = " > ".join(path_parts) or source
-            for part_number, part in enumerate(self._split_long_section(content), start=1):
+            for part_number, part in enumerate(
+                self._split_long_section(content), start=1
+            ):
                 ordinal += 1
                 identity = f"{source}\n{section_path}\n{part_number}\n{part}"
                 chunk_id = "chunk_" + hashlib.sha256(identity.encode()).hexdigest()[:16]
@@ -176,7 +180,11 @@ class SemanticRAG:
                     }
                 )
 
-        if pending and output and len(output[-1]["content"]) + len(pending) + 2 <= self.max_chunk_chars:
+        if (
+            pending
+            and output
+            and len(output[-1]["content"]) + len(pending) + 2 <= self.max_chunk_chars
+        ):
             output[-1]["content"] = f"{output[-1]['content']}\n\n{pending}"
             identity = (
                 f"{source}\n{output[-1]['section_path']}\n"
@@ -221,35 +229,39 @@ class SemanticRAG:
             parts.append(current)
         return parts
 
-    async def _ensure_model_loaded(self) -> None:
-        async with httpx.AsyncClient(timeout=10.0) as client:
-            response = await client.get(f"{self.ollama_url}/api/tags")
-            response.raise_for_status()
-            models = [m.get("name", "") for m in response.json().get("models", [])]
-            if not any(name == self.embed_model or name.startswith(f"{self.embed_model}:") for name in models):
-                raise RAGIndexError(
-                    f"Embedding model {self.embed_model!r} is not installed; run "
-                    f"`ollama pull {self.embed_model}` before startup"
-                )
+    def _get_embedding_engine(self) -> Any:
+        if self._embedding_engine is None:
+            try:
+                from fastembed import TextEmbedding
 
-    async def _embed_many(self, texts: list[str], batch_size: int = 16) -> list[list[float]]:
-        embeddings: list[list[float]] = []
-        async with httpx.AsyncClient(timeout=120.0) as client:
-            for start in range(0, len(texts), batch_size):
-                batch = texts[start : start + batch_size]
-                response = await client.post(
-                    f"{self.ollama_url}/api/embed",
-                    json={"model": self.embed_model, "input": batch},
-                )
-                response.raise_for_status()
-                values = response.json().get("embeddings")
-                if not isinstance(values, list) or len(values) != len(batch):
-                    raise RAGIndexError("Ollama /api/embed returned an incomplete batch")
-                embeddings.extend(values)
-        return embeddings
+                self._embedding_engine = TextEmbedding(model_name=self.embed_model)
+            except Exception as exc:
+                raise RAGIndexError(
+                    f"Failed to load embedding model {self.embed_model!r} via FastEmbed: {exc}"
+                ) from exc
+        return self._embedding_engine
+
+    async def _ensure_model_loaded(self) -> None:
+        loop = asyncio.get_running_loop()
+        await loop.run_in_executor(None, self._get_embedding_engine)
+
+    async def _embed_many(
+        self, texts: list[str], batch_size: int = 32
+    ) -> list[list[float]]:
+        if not texts:
+            return []
+        engine = self._get_embedding_engine()
+        loop = asyncio.get_running_loop()
+
+        def _run_embed() -> list[list[float]]:
+            return [vec.tolist() for vec in engine.embed(texts, batch_size=batch_size)]
+
+        return await loop.run_in_executor(None, _run_embed)
 
     async def _embed_query(self, query: str) -> np.ndarray:
         values = await self._embed_many([query], batch_size=1)
+        if not values or not values[0]:
+            raise RAGIndexError("Embedding service returned an invalid query vector")
         vector = np.asarray(values[0], dtype=np.float32)
         if vector.ndim != 1 or not vector.size:
             raise RAGIndexError("Embedding service returned an invalid query vector")
@@ -263,7 +275,9 @@ class SemanticRAG:
         norms = np.linalg.norm(matrix, axis=1, keepdims=True)
         return matrix / np.where(norms == 0, 1, norms)
 
-    def _load_cache(self, fingerprint: str) -> tuple[list[dict[str, Any]], np.ndarray] | None:
+    def _load_cache(
+        self, fingerprint: str
+    ) -> tuple[list[dict[str, Any]], np.ndarray] | None:
         if not self.cache_path or not self.cache_path.exists():
             return None
         try:
@@ -324,9 +338,10 @@ class SemanticRAG:
             raise RAGIndexError(f"RAG index is not ready (state={self.state})")
 
         started = time.perf_counter()
-        trace_id = "trace_" + hashlib.sha256(
-            f"{time.time_ns()}:{query}".encode()
-        ).hexdigest()[:16]
+        trace_id = (
+            "trace_"
+            + hashlib.sha256(f"{time.time_ns()}:{query}".encode()).hexdigest()[:16]
+        )
         try:
             query_vector = await self._embed_query(query)
             if self.vectors.shape[1] != query_vector.shape[0]:

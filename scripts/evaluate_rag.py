@@ -18,7 +18,7 @@ from src.rag.knowledge_base import SemanticRAG  # noqa: E402
 async def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--top-k", type=int, default=3)
-    parser.add_argument("--threshold", type=float, default=0.35)
+    parser.add_argument("--threshold", type=float, default=0.46)
     parser.add_argument("--output", type=Path)
     args = parser.parse_args()
 
@@ -26,7 +26,10 @@ async def main() -> None:
     rag = SemanticRAG(
         PROJECT_ROOT / "knowledge_base",
         os.getenv("OLLAMA_BASE_URL", "http://localhost:11434"),
-        os.getenv("RAG_EMBED_MODEL", "qwen3-embedding:4b"),
+        os.getenv(
+            "RAG_EMBED_MODEL",
+            "sentence-transformers/paraphrase-multilingual-mpnet-base-v2",
+        ),
         cache_path=PROJECT_ROOT / "data/rag_eval_index.npz",
         trace_path=PROJECT_ROOT / "data/rag_eval_traces.jsonl",
         score_threshold=args.threshold,

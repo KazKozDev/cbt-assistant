@@ -10,7 +10,7 @@ cd cbt-assistant
 python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install -r requirements.txt
-ollama pull ornith-1.5:9b
+ollama pull qwen3.5:9b
 ollama pull qwen3-embedding:4b
 python backend/server.py
 ```
