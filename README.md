@@ -1,6 +1,6 @@
 # CBT Assistant — Local AI Mental Health Chatbot & CBT Journal with Ollama
 
-Local-first CBT assistant: structured thought records, mood and sleep tracking, self-assessments, and SOS exercises — with chat grounded in a local CBT knowledge base via RAG and persistent session memory.
+A local-first application featuring structured thought records, mood and sleep tracking, self-assessments, and SOS exercises. Includes a conversational AI grounded in a built-in CBT knowledge base via RAG, with persistent session memory.
 
 <a id="installation"></a>
 
@@ -30,51 +30,44 @@ python backend/server.py
 
 ## Quick start: run the local AI CBT chatbot
 
-1. Run the command for your platform above. The macOS and Windows launchers create `.venv`, install the Python dependencies, prepare Ollama, download `qwen3.5:9b`, start the server on port `8000`, wait for `/api/health`, and open the browser. On Linux, open `http://localhost:8000` after the server starts; if Ollama is installed but not running, start `ollama serve` in another terminal first.
-2. Start with the chat or open **SOS** for breathing, grounding, muscle relaxation, or STOP. Each fullscreen practice has a visual scene and optional local ambient sound. After you agree to begin, the assistant can choose the practice, scene, and a 1–10 minute timer.
-3. Switch between English and Russian in **Settings**. Later launches reuse the environment and downloaded models.
+1. Use the platform-specific commands above. The macOS and Windows launchers automatically set up the Python environment, prepare Ollama, download `qwen3.5:9b`, start the server on port `8000`, and open your browser. Subsequent launches will reuse this setup. On Linux, ensure `ollama serve` is running, execute the commands, and open `http://localhost:8000`.
+2. Begin by chatting or launching an **SOS** practice. During a conversation, the assistant can proactively suggest and configure a specific SOS practice, scene, or a 1–10 minute timer if you agree.
+3. Switch between English and Russian in **Settings**.
 
 > [!IMPORTANT]
 > CBT Assistant is a self-help and journaling tool, not a therapist, medical device, crisis service, or substitute for professional care. The entire local knowledge base is built directly on clinical research and evidence-based CBT protocols for depression, depressive episodes, anxiety, and low-mood states, but AI-generated responses and self-assessments can still be imperfect. If you may be in immediate danger or at risk of harming yourself or someone else, contact local emergency services or a qualified crisis service now.
 
 ## CBT journal app, mood tracker, self-assessments, and SOS exercises
 
-- **Local CBT chat** retrieves relevant passages from the bundled knowledge base before every answer.
-- **Thought Diary** records a situation, automatic thought, emotion, intensity, possible distortion, and balanced response.
-- **Mood and sleep logs** keep scores, notes, sleep times, interruptions, duration, and quality.
-- **Activities and assessments** track planned actions plus PHQ-9 (depressive symptoms), GAD-7 (anxiety), and Rosenberg Self-Esteem Scale results. These are screening scores for journaling and conversation context, not a diagnosis.
-- **SOS portals** guide paced breathing, 5-4-3-2-1 grounding, progressive muscle relaxation, and STOP with visual scenes, sound, and optional countdowns.
-- **Reports** download a text summary or create a printable PDF report in the browser.
+These records provide future conversation context instead of leaving each chat isolated. Messages and Thought Diary entries are stored in SQLite; interface logs and screening state also use browser `localStorage`.
 
-These records provide future conversation context instead of leaving each chat isolated. Some data is synchronized to SQLite; interface-side state also uses browser `localStorage`.
+- **Thought Diary:** Log situations, automatic thoughts, emotions, intensities, cognitive distortions, and rational responses.
+- **Mood & Sleep Logs:** Track daily scores, notes, sleep duration, interruptions, and quality.
+- **Activities & Assessments:** Plan actions and track screening scores (PHQ-9 for depression, GAD-7 for anxiety, and Rosenberg Self-Esteem).
+- **SOS Portals:** Fullscreen interactive guides for paced breathing, 5-4-3-2-1 grounding, progressive muscle relaxation, and STOP techniques, featuring visual scenes, sound, and countdowns.
+- **Reports:** Generate text summaries or printable PDF reports directly in the browser.
 
 ## Private AI mental health chatbot with local memory
 
-The default chat model is [`qwen3.5:9b`](https://ollama.com/library/qwen3.5). Each request combines retrieved CBT passages, the latest 20 messages, synchronized journal records, a structured personal profile, and a rolling summary refreshed after every 15 new messages.
+The default chat model is [`qwen3.5:9b`](https://ollama.com/library/qwen3.5). The assistant contextualizes every response using retrieved CBT passages, your 20 latest messages, journal records, a structured profile, and a rolling summary refreshed after every 15 messages. The AI can proactively suggest self-assessments, add actions to your planner, or read recent sleep and activity data.
 
-The browser stores its `SESSION_ID` in `localStorage`, so the same profile, transcript, and summary return after a reload or application restart. A different browser profile or cleared browser storage creates a different session identity. Inspect or erase the derived profile and summary with:
+Your browser stores a `SESSION_ID` in `localStorage` to maintain identity across restarts. Clearing browser storage or using a different profile creates a new session. Manage your derived profile and summary via:
 
 ```text
 GET    /api/memory/{session_id}
 DELETE /api/memory/{session_id}
 ```
 
-The assistant can open an agreed SOS practice, suggest a self-assessment, add an agreed action to the planner, and read recent sleep, assessment, or activity data. Retrieved passages and profile memory are inserted into the prompt as delimited data, not instructions.
-
 ## Local CBT knowledge base with RAG and FastEmbed
 
-At startup, `src/rag/knowledge_base.py` splits the bundled Markdown knowledge base by heading hierarchy and computes embeddings locally using FastEmbed (`paraphrase-multilingual-mpnet-base-v2`). REST, streaming, and WebSocket chat share this retrieval path; the model cannot skip it.
-
-The RAG implementation covers the full local retrieval path: hierarchical chunking, embedding generation, similarity gating, cached index restoration, traceable source metadata, and degraded-mode handling when an index rebuild fails.
+At startup, `src/rag/knowledge_base.py` splits the bundled Markdown CBT library by heading hierarchy and computes embeddings locally using FastEmbed (`paraphrase-multilingual-mpnet-base-v2`). The model cannot bypass this retrieval path.
 
 ```text
 GET /api/knowledge/search?q=sleep&top_k=3
 GET /api/knowledge/status
 ```
 
-Results include stable chunk and document IDs, source paths, section hierarchy, similarity scores, index version, and a local trace ID. The browser displays selected sources, and the model is instructed to cite clinical claims as `[KB:chunk_id]`.
-
-The default threshold is `0.35`. When no passage clears it, the assistant may continue supportive conversation but must not invent a specific CBT protocol or clinical justification. Retrieval grounding does not make generated advice clinically correct for an individual user.
+Search results include stable chunk and document IDs, source paths, section hierarchy, similarity scores, index version, and a local trace ID. The AI is instructed to cite clinical claims as `[KB:chunk_id]`. The default similarity threshold is `0.46`. When no passage clears it, the assistant provides general support but does not invent specific CBT protocols.
 
 ## How the local AI assistant works
 
@@ -85,23 +78,22 @@ FastAPI REST + WebSocket API
    ↓
 Prompt assembly ← CBT knowledge search
    ↓                     ↓
-Ollama chat          Ollama embeddings
+Ollama chat          FastEmbed (CPU / ONNX)
    ↓                     ↓
 Response             Markdown knowledge base
    └──────── SQLite + browser localStorage
 ```
 
-The backend persists messages and structured records in SQLite. RAG restores a matching cached NumPy index or rebuilds it after the knowledge content changes. Failed first builds remain unavailable; failed rebuilds keep the previous complete in-memory index in degraded mode.
+The backend persists messages and structured records in SQLite. RAG restores a matching cached NumPy index or rebuilds it if knowledge content changes. Failed first builds remain unavailable; failed rebuilds fall back to the previous complete in-memory index in degraded mode.
 
-See Architecture for the request path, storage model, RAG contract, configuration, and important files.
+See [ARCHITECTURE](docs/ARCHITECTURE.md) for request paths, storage models, RAG contracts, configurations, and important files.
 
 ## Limitations
 
-- CBT Assistant is local-first, not fully offline: text-to-speech, browser speech recognition, Google Fonts, CDN scripts, YouTube media, and printable reports may contact external services.
-- The server binds to `0.0.0.0:8000`, enables permissive CORS, and has no authentication, encryption layer, or multi-user isolation. Do not expose it to the public internet or an untrusted network.
-- Chat quality, response time, and memory use depend on the selected Ollama models and local hardware. Chat is unavailable until the embedding model has built or restored the CBT knowledge index.
-- Generated responses and self-assessments can be wrong. The application does not diagnose, monitor emergencies, contact a clinician, dispatch help, or replace professional care.
-- Linux requires manual installation; Docker and an automatic Linux launcher are not included.
+- **Network:** While local-first, features like text-to-speech, browser speech recognition, Google Fonts, CDN scripts, and YouTube media require internet access.
+- **Security:** The server binds to `0.0.0.0:8000` with permissive CORS and lacks authentication or encryption. Do not expose it to the public internet or untrusted networks.
+- **Performance:** Chat quality, response time, and memory usage depend on your hardware and chosen Ollama model. Chat remains unavailable until the embedding index is built.
+- **Platform:** Docker and an automatic Linux launcher are not included; Linux requires manual setup.
 
 <br>
 <br>
@@ -130,4 +122,3 @@ See Architecture for the request path, storage model, RAG contract, configuratio
   <a href="LICENSE">LICENSE</a> ·
   <a href="https://www.linkedin.com/in/kazkozdev/">LinkedIn</a>
 </p>
-
