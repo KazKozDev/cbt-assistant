@@ -17,10 +17,14 @@ os.makedirs(FINAL_FRAMES_DIR, exist_ok=True)
 
 CHROME_PATH = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
 
-# Load forest background as base64 for 100% reliable Chrome rendering
+# Load forest background and logo as base64 for 100% reliable Chrome rendering
 forest_path = os.path.join(PROJECT_ROOT, 'frontend', 'img', 'bg', 'forest.png')
 with open(forest_path, 'rb') as f:
     FOREST_B64 = base64.b64encode(f.read()).decode('utf-8')
+
+logo_path = os.path.join(PROJECT_ROOT, 'frontend', 'img', 'logo.png')
+with open(logo_path, 'rb') as f:
+    LOGO_B64 = base64.b64encode(f.read()).decode('utf-8')
 
 # SVG Icons
 ICON_NOTEBOOK = '''<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13.4 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7.4"/><path d="M2 6h4"/><path d="M2 10h4"/><path d="M2 14h4"/><path d="M2 18h4"/><path d="M18.4 2.6a2.12 2.12 0 0 1 3 3L11 16l-4 1 1-4Z"/></svg>'''
@@ -29,7 +33,6 @@ ICON_CLIPBOARD = '''<svg width="20" height="20" viewBox="0 0 24 24" fill="none" 
 ICON_CALENDAR = '''<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></svg>'''
 ICON_BARCHART = '''<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" x2="12" y1="20" y2="10"/><line x1="18" x2="18" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="16"/></svg>'''
 ICON_SETTINGS = '''<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>'''
-ICON_BRAIN = '''<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5a3 3 0 1 0-5.997.125 4 4 0 0 0-2.526 5.77 4 4 0 0 0 .556 6.588A4 4 0 1 0 12 18Z"/><path d="M12 5a3 3 0 1 1 5.997.125 4 4 0 0 1 2.526 5.77 4 4 0 0 1-.556 6.588A4 4 0 1 1 12 18Z"/><path d="M15 13a4.5 4.5 0 0 1-3-4 4.5 4.5 0 0 1-3 4"/><path d="M12 18v4"/></svg>'''
 ICON_USER = '''<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>'''
 ICON_LIFEBUOY = '''<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m4.93 4.93 4.24 4.24"/><path d="m14.83 9.17 4.24-4.24"/><path d="m14.83 14.83 4.24 4.24"/><path d="m9.17 14.83-4.24 4.24"/><circle cx="12" cy="12" r="4"/></svg>'''
 ICON_SEND = '''<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m5 12 7-7 7 7"/><path d="M12 19V5"/></svg>'''
@@ -53,7 +56,9 @@ def get_chat_html(typed_text="", show_user_msg=False, show_assistant_msg=False, 
     if show_assistant_msg:
         assistant_msg_html = f'''
         <div class="msg" style="animation: fadeIn 0.3s ease;">
-            <div class="msg-avatar" style="background:var(--accent-light); color:var(--accent);">{ICON_BRAIN}</div>
+            <div class="msg-avatar" style="background:var(--accent-light); display:flex; align-items:center; justify-content:center;">
+                <img src="data:image/png;base64,{LOGO_B64}" style="width:20px; height:20px; object-fit:contain;">
+            </div>
             <div class="msg-content">
                 <p>{assistant_text}</p>
                 <div style="margin-top:16px;">
@@ -185,7 +190,7 @@ def get_chat_html(typed_text="", show_user_msg=False, show_assistant_msg=False, 
     <div class="container">
         <div class="header">
             <div style="display:flex; align-items:center; gap:10px;">
-                <div style="color:#797298; display:flex;">{ICON_BRAIN}</div>
+                <img src="data:image/png;base64,{LOGO_B64}" style="width:24px; height:24px; object-fit:contain; border-radius:6px;">
                 <span style="font-weight:600; font-size:16px; color:#2f2f2b;">CBT Assistant</span>
             </div>
             <div style="display:flex; align-items:center; gap:14px;">
