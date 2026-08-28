@@ -107,8 +107,8 @@ See Architecture for the request path, storage model, RAG contract, configuratio
 <br>
 
 <p align="center">
-  <img src="assets/cbt-assistant-art-flow.png" alt="CBT Assistant Art Flow" height="400">
-  <img src="assets/cbt-assistant-art-mind.png" alt="CBT Assistant Art Mind" height="400">
+  <img src="assets/cbt-assistant-art-flow.png" alt="CBT Assistant Art Flow" height="360">&nbsp;&nbsp;
+  <img src="assets/cbt-assistant-art-mind.png" alt="CBT Assistant Art Mind" height="360">
 </p>
 
 <p align="center">
