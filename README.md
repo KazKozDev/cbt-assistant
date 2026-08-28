@@ -43,7 +43,7 @@ python backend/server.py
 - **Local CBT chat** retrieves relevant passages from the bundled knowledge base before every answer.
 - **Thought Diary** records a situation, automatic thought, emotion, intensity, possible distortion, and balanced response.
 - **Mood and sleep logs** keep scores, notes, sleep times, interruptions, duration, and quality.
-- **Activities and assessments** track planned actions plus PHQ-9, GAD-7, and Rosenberg Self-Esteem Scale results.
+- **Activities and assessments** track planned actions plus PHQ-9 (depressive symptoms), GAD-7 (anxiety), and Rosenberg Self-Esteem Scale results. These are screening scores for journaling and conversation context, not a diagnosis.
 - **SOS portals** guide paced breathing, 5-4-3-2-1 grounding, progressive muscle relaxation, and STOP with visual scenes, sound, and optional countdowns.
 - **Reports** download a text summary or create a printable PDF report in the browser.
 
