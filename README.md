@@ -111,6 +111,8 @@ See Architecture for the request path, storage model, RAG contract, configuratio
   <img src="assets/cbt-assistant-art-mind.png" alt="CBT Assistant Art Mind" width="64%">
 </p>
 
+<br>
+
 <p align="center">
   <a href="start_cbt_assistant.command"><img alt="macOS" src="https://img.shields.io/badge/macOS-000000.svg?logo=apple&amp;logoColor=white" height="28"></a>
   <a href="start_cbt_assistant.bat"><img alt="Windows" src="https://img.shields.io/badge/Windows-0078D4.svg?logo=windows&amp;logoColor=white" height="28"></a>
