@@ -41,10 +41,13 @@ python backend/server.py
 
 These records provide future conversation context instead of leaving each chat isolated. Messages and Thought Diary entries are stored in SQLite; interface logs and screening state also use browser `localStorage`.
 
+- **Progress Dashboard:** Visual charts and analytics tracking your mood dynamics, sleep patterns, and emotional wellbeing trends over time.
+- **Records Calendar:** An interactive month-view calendar unifying daily entries across thoughts, mood, sleep, planned activities, and test scores.
+- **Clinical Self-Assessments:** Standardized psychometric screening tools (PHQ-9 for depression, GAD-7 for anxiety, Rosenberg Self-Esteem, and Burnout assessment) with score interpretations.
 - **Thought Diary:** Log situations, automatic thoughts, emotions, intensities, cognitive distortions, and rational responses.
-- **Mood & Sleep Logs:** Track daily scores, notes, sleep duration, interruptions, and quality.
-- **Activities & Assessments:** Plan actions and track screening scores (PHQ-9 for depression, GAD-7 for anxiety, and Rosenberg Self-Esteem).
+- **Mood & Sleep Logs:** Track daily scores, notes, sleep duration, interruptions, and sleep quality.
 - **SOS Portals:** Fullscreen interactive guides for paced breathing, 5-4-3-2-1 grounding, progressive muscle relaxation, and STOP techniques, featuring visual scenes, sound, and countdowns.
+- **Voice Mode & Speech Input:** Hands-free voice conversation with microphone speech recognition and realistic neural text-to-speech voice responses (English and Russian).
 - **Reports:** Generate text summaries or printable PDF reports directly in the browser.
 
 ## Private AI mental health chatbot with local memory
