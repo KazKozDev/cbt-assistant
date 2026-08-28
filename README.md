@@ -51,6 +51,8 @@ These records provide future conversation context instead of leaving each chat i
 
 The default chat model is [`qwen3.5:9b`](https://ollama.com/library/qwen3.5). The assistant maintains **durable long-term memory across sessions** by persisting a structured personal profile and rolling conversation summaries in SQLite.
 
+- **Empathetic, Open Dialogue:** A completely private, safe space to speak your mind, vent about tough days, talk heart-to-heart, and receive warm, non-judgmental support.
+- **Strict Clinical Grounding (No Hallucinations):** Prompt-engineered and gated by FastEmbed RAG to avoid inventing psychological concepts or hallucinating clinical protocols. It strictly bases therapeutic guidance on verified, evidence-based CBT knowledge (`[KB:chunk_id]`), abstaining from fabricated advice when context is absent.
 - **AI Tools & Direct Journaling:** During chat, you can ask the assistant to directly record structured entries into your **Thought Diary** (analyzing automatic thoughts, cognitive distortions, and rational responses) or log your **Sleep Diary** (bedtime, wake time, duration, and sleep quality).
 - **Proactive Interventions:** The AI can launch agreed fullscreen **SOS portals**, schedule planned activities, or pull recent sleep, mood, and screening assessments for contextual guidance.
 - **Cross-Session Memory:** A persistent `SESSION_ID` ensures your conversation context, personal profile, and rolling summary survive browser reloads and app restarts.
