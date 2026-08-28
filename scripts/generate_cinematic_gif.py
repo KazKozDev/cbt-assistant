@@ -1,11 +1,12 @@
 import os
 import math
+import base64
 import subprocess
 import concurrent.futures
-from PIL import Image, ImageChops
+from PIL import Image
 
 PROJECT_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
-SCRATCH_DIR = os.path.join(PROJECT_ROOT, 'scratch', 'cinematic_demo')
+SCRATCH_DIR = os.path.join(PROJECT_ROOT, 'scratch', 'cinematic_demo_v2')
 FRAMES_DIR = os.path.join(SCRATCH_DIR, 'frames')
 PNGS_DIR = os.path.join(SCRATCH_DIR, 'pngs')
 FINAL_FRAMES_DIR = os.path.join(SCRATCH_DIR, 'final_frames')
@@ -15,6 +16,11 @@ os.makedirs(PNGS_DIR, exist_ok=True)
 os.makedirs(FINAL_FRAMES_DIR, exist_ok=True)
 
 CHROME_PATH = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
+
+# Load forest background as base64 for 100% reliable Chrome rendering
+forest_path = os.path.join(PROJECT_ROOT, 'frontend', 'img', 'bg', 'forest.png')
+with open(forest_path, 'rb') as f:
+    FOREST_B64 = base64.b64encode(f.read()).decode('utf-8')
 
 # SVG Icons
 ICON_NOTEBOOK = '''<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13.4 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7.4"/><path d="M2 6h4"/><path d="M2 10h4"/><path d="M2 14h4"/><path d="M2 18h4"/><path d="M18.4 2.6a2.12 2.12 0 0 1 3 3L11 16l-4 1 1-4Z"/></svg>'''
@@ -27,9 +33,9 @@ ICON_BRAIN = '''<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stro
 ICON_USER = '''<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>'''
 ICON_LIFEBUOY = '''<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m4.93 4.93 4.24 4.24"/><path d="m14.83 9.17 4.24-4.24"/><path d="m14.83 14.83 4.24 4.24"/><path d="m9.17 14.83-4.24 4.24"/><circle cx="12" cy="12" r="4"/></svg>'''
 ICON_SEND = '''<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m5 12 7-7 7 7"/><path d="M12 19V5"/></svg>'''
-ICON_WIND = '''<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.7 7.7A2.5 2.5 0 1 1 19 12H2"/><path d="M12.6 19.4A2 2 0 1 0 14 16H2"/></svg>'''
+ICON_WIND = '''<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.7 7.7A2.5 2.5 0 1 1 19 12H2"/><path d="M12.6 19.4A2 2 0 1 0 14 16H2"/></svg>'''
 
-def get_chat_html(typed_text="", show_user_msg=False, show_assistant_msg=False, assistant_text="", show_cursor_click=False):
+def get_chat_html(typed_text="", show_user_msg=False, show_assistant_msg=False, assistant_text="", show_cursor_click=False, zoom_factor=1.0, zoom_origin="50% 50%"):
     css_path = os.path.abspath(os.path.join(PROJECT_ROOT, 'frontend', 'css', 'style.css'))
     
     user_msg_html = ""
@@ -38,7 +44,7 @@ def get_chat_html(typed_text="", show_user_msg=False, show_assistant_msg=False, 
         <div class="msg user" style="animation: fadeIn 0.3s ease;">
             <div class="msg-avatar">{ICON_USER}</div>
             <div class="msg-content">
-                <p>I'm feeling really anxious and overwhelmed right now...</p>
+                <p>I feel really anxious and overwhelmed right now...</p>
             </div>
         </div>
         '''
@@ -50,8 +56,8 @@ def get_chat_html(typed_text="", show_user_msg=False, show_assistant_msg=False, 
             <div class="msg-avatar" style="background:var(--accent-light); color:var(--accent);">{ICON_BRAIN}</div>
             <div class="msg-content">
                 <p>{assistant_text}</p>
-                <div style="margin-top:14px;">
-                    <div class="sos-action-card" style="display:inline-flex; align-items:center; gap:10px; padding:10px 16px; background:var(--accent-light); color:var(--accent); border-radius:12px; font-weight:600; font-size:14px; border:1px solid rgba(121, 114, 152, 0.2); box-shadow:0 2px 8px rgba(121, 114, 152, 0.15);">
+                <div style="margin-top:16px;">
+                    <div class="sos-action-card" style="display:inline-flex; align-items:center; gap:12px; padding:12px 20px; background:var(--accent-light); color:var(--accent); border-radius:14px; font-weight:600; font-size:14.5px; border:1px solid rgba(121, 114, 152, 0.25); box-shadow:0 4px 12px rgba(121, 114, 152, 0.12); cursor:pointer;">
                         {ICON_WIND}
                         <span>🌬️ Calming Breathing Practice (5s Inhale)</span>
                     </div>
@@ -63,11 +69,11 @@ def get_chat_html(typed_text="", show_user_msg=False, show_assistant_msg=False, 
     click_indicator = ""
     if show_cursor_click:
         click_indicator = '''
-        <div style="position:absolute; bottom:180px; left:460px; pointer-events:none; z-index:100; display:flex; align-items:center; gap:8px;">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="#2f2f2b" stroke="#ffffff" stroke-width="1.5">
+        <div style="position:absolute; bottom:195px; left:470px; pointer-events:none; z-index:100; display:flex; align-items:center; gap:8px;">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="#2f2f2b" stroke="#ffffff" stroke-width="1.5">
                 <path d="m3 3 7 18 3-7 7-3L3 3z"/>
             </svg>
-            <div style="width:28px; height:28px; border-radius:50%; background:rgba(121,114,152,0.4); border:2px solid #797298; position:absolute; top:-6px; left:-6px; animation: pulse 0.5s infinite;"></div>
+            <div style="width:30px; height:30px; border-radius:50%; background:rgba(121,114,152,0.4); border:2px solid #797298; position:absolute; top:-6px; left:-6px; animation: pulse 0.5s infinite;"></div>
         </div>
         '''
 
@@ -80,13 +86,15 @@ def get_chat_html(typed_text="", show_user_msg=False, show_assistant_msg=False, 
         * {{ margin: 0; padding: 0; box-sizing: border-box; }}
         body {{
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background: var(--bg);
-            color: var(--text);
+            background: #FAF9F6;
+            color: #2f2f2b;
             display: flex;
             height: 920px;
             width: 1280px;
             overflow: hidden;
             padding-left: 54px;
+            transform: scale({zoom_factor});
+            transform-origin: {zoom_origin};
         }}
         .sidebar {{
             position: fixed;
@@ -94,8 +102,8 @@ def get_chat_html(typed_text="", show_user_msg=False, show_assistant_msg=False, 
             top: 0;
             bottom: 0;
             width: 54px;
-            background: var(--panel);
-            border-right: 1px solid var(--border);
+            background: #ffffff;
+            border-right: 1px solid #e6e4dc;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -110,14 +118,14 @@ def get_chat_html(typed_text="", show_user_msg=False, show_assistant_msg=False, 
             display: flex;
             align-items: center;
             justify-content: center;
-            color: var(--gray);
+            color: #6b6b63;
             background: transparent;
             border: none;
             cursor: pointer;
         }}
         .sidebar-btn.active, .sidebar-btn:hover {{
-            background: var(--accent-light);
-            color: var(--accent);
+            background: #eeecf4;
+            color: #797298;
         }}
         .container {{
             max-width: 820px;
@@ -133,8 +141,8 @@ def get_chat_html(typed_text="", show_user_msg=False, show_assistant_msg=False, 
             display: flex;
             justify-content: space-between;
             align-items: center;
-            border-bottom: 1px solid var(--border);
-            background: var(--bg);
+            border-bottom: 1px solid #e6e4dc;
+            background: #FAF9F6;
         }}
         .chat-box {{
             flex: 1;
@@ -146,20 +154,15 @@ def get_chat_html(typed_text="", show_user_msg=False, show_assistant_msg=False, 
         }}
         .input-dock {{
             padding: 14px 24px 24px 24px;
-            background: var(--bg);
+            background: #FAF9F6;
         }}
         .cursor {{
             display: inline-block;
-            width: 2px;
-            height: 18px;
-            background: var(--accent);
+            width: 2.5px;
+            height: 19px;
+            background: #797298;
             vertical-align: middle;
             margin-left: 2px;
-            animation: blink 0.8s infinite;
-        }}
-        @keyframes blink {{
-            0%, 100% {{ opacity: 1; }}
-            50% {{ opacity: 0; }}
         }}
         @keyframes fadeIn {{
             from {{ opacity: 0; transform: translateY(6px); }}
@@ -182,14 +185,14 @@ def get_chat_html(typed_text="", show_user_msg=False, show_assistant_msg=False, 
     <div class="container">
         <div class="header">
             <div style="display:flex; align-items:center; gap:10px;">
-                <div style="color:var(--accent); display:flex;">{ICON_BRAIN}</div>
-                <span style="font-weight:600; font-size:16px; color:var(--text);">CBT Assistant</span>
+                <div style="color:#797298; display:flex;">{ICON_BRAIN}</div>
+                <span style="font-weight:600; font-size:16px; color:#2f2f2b;">CBT Assistant</span>
             </div>
             <div style="display:flex; align-items:center; gap:14px;">
                 <button style="background:#797298; color:#ffffff; border:none; border-radius:10px; padding:7px 14px; font-size:13px; font-weight:600; display:flex; align-items:center; gap:6px; cursor:pointer;">
                     {ICON_LIFEBUOY} <span>SOS</span>
                 </button>
-                <div style="display:flex; align-items:center; gap:8px; font-size:13px; color:var(--gray);">
+                <div style="display:flex; align-items:center; gap:8px; font-size:13px; color:#6b6b63;">
                     <span style="width:8px; height:8px; border-radius:50%; background:#6aa882; display:inline-block;"></span>
                     <span>Online • ornith-1.5:9b</span>
                 </div>
@@ -202,17 +205,17 @@ def get_chat_html(typed_text="", show_user_msg=False, show_assistant_msg=False, 
         </div>
 
         <div class="input-dock">
-            <div class="input-wrap" style="flex-direction:column; align-items:stretch; padding:14px 18px; border-radius:18px; background:var(--panel); border:1px solid var(--border); box-shadow:0 4px 16px rgba(0,0,0,0.04);">
-                <div style="min-height:36px; font-size:15px; color:var(--text); line-height:1.5; font-family:inherit;">
+            <div class="input-wrap" style="flex-direction:column; align-items:stretch; padding:14px 18px; border-radius:18px; background:#ffffff; border:1px solid #e6e4dc; box-shadow:0 4px 16px rgba(0,0,0,0.05);">
+                <div style="min-height:36px; font-size:15.5px; color:#2f2f2b; line-height:1.5; font-family:inherit;">
                     {typed_text}{'<span class="cursor"></span>' if not show_user_msg else ''}
                 </div>
                 <div style="display:flex; justify-content:flex-end; align-items:center; margin-top:6px;">
-                    <button class="btn-send" style="background:var(--accent); color:#fff; width:34px; height:34px; border-radius:50%; border:none; display:flex; align-items:center; justify-content:center; cursor:pointer;">
+                    <button class="btn-send" style="background:#797298; color:#fff; width:34px; height:34px; border-radius:50%; border:none; display:flex; align-items:center; justify-content:center; cursor:pointer;">
                         {ICON_SEND}
                     </button>
                 </div>
             </div>
-            <p style="text-align:center; font-size:11.5px; color:var(--gray); opacity:0.7; margin-top:8px;">
+            <p style="text-align:center; font-size:11.5px; color:#6b6b63; opacity:0.75; margin-top:8px;">
                 Local CBT Assistant grounded via knowledge base RAG and session memory.
             </p>
         </div>
@@ -224,7 +227,6 @@ def get_chat_html(typed_text="", show_user_msg=False, show_assistant_msg=False, 
 
 def get_breathe_html(scale, count_num, t_sec, particles):
     css_path = os.path.abspath(os.path.join(PROJECT_ROOT, 'frontend', 'css', 'style.css'))
-    bg_img_path = os.path.abspath(os.path.join(PROJECT_ROOT, 'frontend', 'img', 'bg', 'forest.png'))
     
     p_html = ''
     for p in particles:
@@ -256,13 +258,13 @@ def get_breathe_html(scale, count_num, t_sec, particles):
             position: absolute;
             top: 0;
             left: 0;
-            background-image: linear-gradient(to bottom, rgba(5,5,16,0.6) 0%, rgba(5,5,16,0.85) 100%), url('file://{bg_img_path}');
+            background-image: linear-gradient(to bottom, rgba(5,5,16,0.6) 0%, rgba(5,5,16,0.85) 100%), url('data:image/png;base64,{FOREST_B64}');
             background-size: cover;
             background-position: center;
         }}
         #breatheFlower {{
             transform: scale({scale:.4f}) !important;
-            opacity: {0.65 + 0.35 * ease_progress:.3f} !important;
+            opacity: {0.7 + 0.3 * ease_progress:.3f} !important;
             transition: none !important;
         }}
         .breathe-bg-glow {{
@@ -307,6 +309,10 @@ def get_breathe_html(scale, count_num, t_sec, particles):
 def render_one(name, html_content):
     html_file = os.path.join(FRAMES_DIR, f'{name}.html')
     png_file = os.path.join(PNGS_DIR, f'{name}.png')
+    
+    if os.path.exists(png_file) and os.path.getsize(png_file) > 10000:
+        return name
+
     with open(html_file, 'w', encoding='utf-8') as f:
         f.write(html_content)
         
@@ -318,39 +324,75 @@ def render_one(name, html_content):
         f'--screenshot={png_file}',
         f'file://{html_file}'
     ]
-    subprocess.run(cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    
+    for attempt in range(3):
+        try:
+            subprocess.run(cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=15)
+            if os.path.exists(png_file) and os.path.getsize(png_file) > 10000:
+                break
+        except Exception:
+            if attempt == 2:
+                raise
     return name
 
 def main():
-    print("Generating cinematic frames specification...")
+    print("Generating cinematic frames specification (v2)...")
+    os.makedirs(FRAMES_DIR, exist_ok=True)
+    os.makedirs(PNGS_DIR, exist_ok=True)
+    os.makedirs(FINAL_FRAMES_DIR, exist_ok=True)
     
-    # 1. Typing prompts
-    prompt = "I'm feeling really anxious and overwhelmed right now..."
-    typing_frames = []
-    # 14 frames for typing
-    for i in range(14):
-        chars = int((i + 1) / 14 * len(prompt))
+    # Text prompt to type
+    prompt = "I feel really anxious and overwhelmed right now..."
+    
+    # 1. Close-up typing frames (zoom 1.85x centered on input box at bottom)
+    # 22 frames = 2.2 seconds smooth character-by-character typing
+    typing_close_frames = []
+    total_type_frames = 22
+    for i in range(total_type_frames):
+        chars = int(min(len(prompt), math.ceil((i + 1) / total_type_frames * len(prompt))))
         text = prompt[:chars]
-        typing_frames.append(('chat_type_' + f'{i:02d}', get_chat_html(typed_text=text)))
+        typing_close_frames.append((f'chat_type_close_{i:02d}', get_chat_html(
+            typed_text=text,
+            zoom_factor=1.85,
+            zoom_origin="50% 90%"
+        )))
         
-    # 2. User message posted (4 frames)
+    # 2. Camera zoom-out transition frames (pull back from close-up to full wide UI)
+    # 6 frames = 0.6 seconds smooth ease-out pull back
+    zoomout_frames = []
+    for i in range(6):
+        t = (i + 1) / 6.0
+        # ease-in-out curve
+        ease = 0.5 - 0.5 * math.cos(math.pi * t)
+        zoom = 1.85 - 0.85 * ease
+        zoomout_frames.append((f'chat_zoomout_{i:02d}', get_chat_html(
+            typed_text=prompt,
+            zoom_factor=zoom,
+            zoom_origin="50% 90%"
+        )))
+        
+    # 3. User message posted in wide UI (4 frames = 0.4 seconds)
     user_posted_frames = []
     for i in range(4):
-        user_posted_frames.append(('chat_user_' + f'{i:02d}', get_chat_html(show_user_msg=True)))
+        user_posted_frames.append((f'chat_user_{i:02d}', get_chat_html(
+            show_user_msg=True,
+            zoom_factor=1.0
+        )))
         
-    # 3. Assistant responds with supportive text & breathing action (16 frames)
-    ast_text = "I hear you. Let's take a pause together and ground yourself with a calming breathing practice."
+    # 4. Assistant responds with supportive message & breathing action (16 frames = 1.6 seconds)
+    ast_text = "I hear you. Let's take a slow breath together and ground yourself with a calming practice."
     ast_frames = []
     for i in range(16):
-        show_click = (i >= 12)
-        ast_frames.append(('chat_ast_' + f'{i:02d}', get_chat_html(
+        show_click = (i >= 11)
+        ast_frames.append((f'chat_ast_{i:02d}', get_chat_html(
             show_user_msg=True,
             show_assistant_msg=True,
             assistant_text=ast_text,
-            show_cursor_click=show_click
+            show_cursor_click=show_click,
+            zoom_factor=1.0
         )))
         
-    # 4. Breathing Inhale Sequence (50 frames, 5 seconds at unaccelerated 1s/count)
+    # 5. Breathing Inhale Sequence (50 frames = 5.0 seconds unaccelerated, 1s per number 1..5)
     particles = []
     for i in range(35):
         particles.append({
@@ -369,37 +411,35 @@ def main():
         progress = i / (total_b_frames - 1)
         ease_progress = 0.5 - 0.5 * math.cos(math.pi * progress)
         scale = 1.0 + 0.6 * ease_progress
-        breathe_frames.append(('breathe_' + f'{i:02d}', get_breathe_html(scale, count_num, t_sec, particles)))
+        breathe_frames.append((f'breathe_{i:02d}', get_breathe_html(scale, count_num, t_sec, particles)))
 
-    all_specs = typing_frames + user_posted_frames + ast_frames + breathe_frames
+    all_specs = typing_close_frames + zoomout_frames + user_posted_frames + ast_frames + breathe_frames
     print(f"Total base frames to render: {len(all_specs)}")
     
-    with concurrent.futures.ThreadPoolExecutor(max_workers=6) as executor:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
         futures = [executor.submit(render_one, name, html) for name, html in all_specs]
         for f in concurrent.futures.as_completed(futures):
             f.result()
             
     print("All base frames rendered to PNG.")
     
-    # 5. Composite timeline with smooth cross-dissolve transitions
-    # - Chat typing: 14 frames
-    # - Chat user: 4 frames
-    # - Chat assistant: 16 frames
-    # - Transition Chat -> Breathing (8 cross-fade frames)
-    # - Breathing Inhale: 50 frames
-    # - Transition Breathing -> Chat Loop (8 cross-fade frames)
-    
+    # 6. Composite timeline with smooth dissolves
     timeline = []
     
-    # Chat section
-    for name, _ in typing_frames:
+    # A. Close-up typing
+    for name, _ in typing_close_frames:
         timeline.append(os.path.join(PNGS_DIR, f'{name}.png'))
+    # B. Zoom-out pull-back
+    for name, _ in zoomout_frames:
+        timeline.append(os.path.join(PNGS_DIR, f'{name}.png'))
+    # C. User message
     for name, _ in user_posted_frames:
         timeline.append(os.path.join(PNGS_DIR, f'{name}.png'))
+    # D. Assistant response
     for name, _ in ast_frames:
         timeline.append(os.path.join(PNGS_DIR, f'{name}.png'))
         
-    # Crossfade 1: Last chat frame -> First breathe frame (8 frames)
+    # E. Dissolve 1: Wide chat -> Fullscreen Forest Breathing Portal (8 frames)
     last_chat_img = Image.open(timeline[-1]).convert('RGB')
     first_breathe_img = Image.open(os.path.join(PNGS_DIR, f'{breathe_frames[0][0]}.png')).convert('RGB')
     
@@ -413,18 +453,18 @@ def main():
         
     timeline.extend(dissolve1_frames)
     
-    # Breathing section
+    # F. Breathing Inhale practice
     for name, _ in breathe_frames:
         timeline.append(os.path.join(PNGS_DIR, f'{name}.png'))
         
-    # Crossfade 2: Last breathe frame -> First chat frame (8 frames) for seamless loop
+    # G. Dissolve 2: Fully expanded breath -> Close-up typing start (8 frames) for seamless loop
     last_breathe_img = Image.open(timeline[-1]).convert('RGB')
-    first_chat_img = Image.open(os.path.join(PNGS_DIR, f'{typing_frames[0][0]}.png')).convert('RGB')
+    first_close_img = Image.open(os.path.join(PNGS_DIR, f'{typing_close_frames[0][0]}.png')).convert('RGB')
     
     dissolve2_frames = []
     for step in range(1, 9):
         alpha = step / 9.0
-        blended = Image.blend(last_breathe_img, first_chat_img, alpha)
+        blended = Image.blend(last_breathe_img, first_close_img, alpha)
         diss_path = os.path.join(FINAL_FRAMES_DIR, f'dissolve2_{step:02d}.png')
         blended.save(diss_path)
         dissolve2_frames.append(diss_path)
