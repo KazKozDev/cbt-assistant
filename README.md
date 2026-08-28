@@ -35,7 +35,7 @@ python backend/server.py
 3. Switch between English and Russian in **Settings**. Later launches reuse the environment and downloaded models.
 
 > [!IMPORTANT]
-> CBT Assistant is a self-help and journaling tool, not a therapist, medical device, crisis service, or substitute for professional care. Its responses and assessment results can be wrong. If you may be in immediate danger or at risk of harming yourself or someone else, contact local emergency services or a qualified crisis service now.
+> CBT Assistant is a self-help and journaling tool, not a therapist, medical device, crisis service, or substitute for professional care. The entire local knowledge base is built directly on clinical research and evidence-based CBT protocols for depression, depressive episodes, anxiety, and low-mood states, but AI-generated responses and self-assessments can still be imperfect. If you may be in immediate danger or at risk of harming yourself or someone else, contact local emergency services or a qualified crisis service now.
 
 ## CBT journal app, mood tracker, self-assessments, and SOS exercises
 
@@ -125,7 +125,7 @@ See Architecture for the request path, storage model, RAG contract, configuratio
 
 <p align="center">
   <a href="https://github.com/KazKozDev/cbt-assistant/issues">Issues</a> ·
-  <a href="docs/ARCHITECTURE.md">Architecture</a> ·
+  <a href="docs/ARCHITECTURE.md">ARCHITECTURE</a> ·
   <a href="docs/PRIVACY_AND_SAFETY.md">Privacy &amp; Safety</a> ·
   <a href="LICENSE">LICENSE</a> ·
   <a href="https://www.linkedin.com/in/kazkozdev/">LinkedIn</a>
