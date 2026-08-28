@@ -95,8 +95,6 @@ Response             Markdown knowledge base
 
 The backend persists messages and structured records in SQLite. RAG restores a matching cached NumPy index or rebuilds it if knowledge content changes. Failed first builds remain unavailable; failed rebuilds fall back to the previous complete in-memory index in degraded mode.
 
-See [ARCHITECTURE](docs/ARCHITECTURE.md) for request paths, storage models, RAG contracts, configurations, and important files.
-
 ## Limitations
 
 - **Network:** While local-first, features like text-to-speech, browser speech recognition, Google Fonts, CDN scripts, and YouTube media require internet access.
@@ -116,7 +114,7 @@ See [ARCHITECTURE](docs/ARCHITECTURE.md) for request paths, storage models, RAG 
 <br>
 
 <p align="center">
-  <a href="start_cbt_assistant.command"><img alt="macOS" src="https://img.shields.io/badge/macOS-5856D6.svg?logo=apple&amp;logoColor=white" height="28"></a>
+  <a href="start_cbt_assistant.command"><img alt="macOS" src="https://img.shields.io/badge/macOS-0071E3.svg?logo=apple&amp;logoColor=white" height="28"></a>
   <a href="start_cbt_assistant.bat"><img alt="Windows" src="https://img.shields.io/badge/Windows-0078D4.svg?logo=windows&amp;logoColor=white" height="28"></a>
   <a href="#installation"><img alt="Linux" src="https://img.shields.io/badge/Linux-FCC624.svg?logo=linux&amp;logoColor=black" height="28"></a>
   <a href="https://github.com/KazKozDev/cbt-assistant/actions/workflows/tests.yml"><img alt="CI" src="https://github.com/KazKozDev/cbt-assistant/actions/workflows/tests.yml/badge.svg" height="28"></a>
