@@ -108,7 +108,7 @@ See [ARCHITECTURE](docs/ARCHITECTURE.md) for request paths, storage models, RAG 
 <br>
 
 <p align="center">
-  <img src="assets/cbt-assistant-art-flow.png" alt="CBT Assistant Art Flow" width="34%">&nbsp;&nbsp;
+  <img src="assets/cbt-assistant-art-flow.gif" alt="CBT Assistant Art Flow" width="34%">&nbsp;&nbsp;
   <img src="assets/cbt-assistant-art-mind.png" alt="CBT Assistant Art Mind" width="64%">
 </p>
 
