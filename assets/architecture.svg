@@ -1,0 +1,86 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="680" height="640" viewBox="0 0 680 640" role="img" aria-label="CBT Assistant architecture"><title>CBT Assistant architecture</title>
+<rect width="680" height="640" fill="#e6e1d6"/>
+<path d="M239.9 30.1 L431.0 29.9 L430.0 80.2 L239.2 80.0 Z" fill="#f4f1ea"/>
+<path d="M240.4 30.8 Q333.4 29.2 428.9 30.9 M430.5 28.7 Q431.9 56.8 430.4 80.3 M429.0 78.6 Q335.1 78.3 239.1 79.3 M238.7 79.9 Q239.8 56.3 240.1 30.4" fill="none" stroke="#2f2c28" stroke-width="1.6" stroke-linecap="round"/>
+<path d="M240.0 30.5 Q334.8 29.1 431.4 31.4 M431.0 30.6 Q429.3 53.9 429.4 78.8 M430.7 79.7 Q336.4 79.6 241.3 81.0 M238.6 79.2 Q241.6 54.9 241.3 29.7" fill="none" stroke="#2f2c28" stroke-width="1.1" stroke-linecap="round" opacity="0.45"/>
+<text x="335" y="61" text-anchor="middle" font-family="-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif" font-size="17" font-weight="500" fill="#2f2c28">Browser UI</text>
+<path d="M213.0 118.3 L446.7 117.4 L445.0 181.6 L215.1 182.6 Z" fill="#f4f1ea"/>
+<path d="M212.9 117.3 Q328.4 116.3 446.8 117.1 M446.2 117.9 Q444.8 150.9 445.0 182.4 M444.9 181.8 Q328.9 181.1 215.3 182.8 M213.5 183.1 Q212.9 149.6 215.0 118.4" fill="none" stroke="#2f2c28" stroke-width="1.6" stroke-linecap="round"/>
+<path d="M212.9 119.4 Q328.9 117.1 446.8 117.5 M445.4 116.8 Q444.4 150.3 445.3 182.3 M445.6 181.9 Q331.8 181.9 214.2 183.0 M213.1 181.0 Q215.6 151.2 213.3 117.1" fill="none" stroke="#2f2c28" stroke-width="1.1" stroke-linecap="round" opacity="0.45"/>
+<text x="330" y="148" text-anchor="middle" font-family="-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif" font-size="17" font-weight="500" fill="#2f2c28">FastAPI</text>
+<text x="330" y="168" text-anchor="middle" font-family="-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif" font-size="13" fill="#615c54">REST + SSE stream</text>
+<path d="M60.6 223.1 L249.3 223.1 L250.9 286.2 L59.8 285.0 Z" fill="#f4f1ea"/>
+<path d="M58.7 223.3 Q154.0 222.8 249.3 222.9 M250.3 221.4 Q248.7 254.9 248.8 285.2 M250.2 287.0 Q155.4 285.1 61.2 285.2 M58.6 285.4 Q59.8 252.3 59.1 221.6" fill="none" stroke="#2f2c28" stroke-width="1.6" stroke-linecap="round"/>
+<path d="M60.2 221.0 Q154.5 223.5 251.3 222.4 M250.5 222.2 Q248.6 252.2 248.7 287.1 M250.6 287.3 Q153.1 286.5 60.0 286.6 M59.5 287.4 Q58.3 254.2 60.7 223.1" fill="none" stroke="#2f2c28" stroke-width="1.1" stroke-linecap="round" opacity="0.45"/>
+<text x="155" y="252" text-anchor="middle" font-family="-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif" font-size="17" font-weight="500" fill="#2f2c28">CBT knowledge base</text>
+<text x="155" y="272" text-anchor="middle" font-family="-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif" font-size="13" fill="#615c54">Markdown + embeddings</text>
+<path d="M430.6 222.5 L630.7 223.0 L629.6 286.4 L431.0 286.9 Z" fill="#f4f1ea"/>
+<path d="M429.8 222.8 Q531.4 222.3 630.3 221.7 M630.2 222.3 Q628.4 254.5 631.4 287.1 M630.6 285.7 Q530.9 286.3 429.8 286.9 M428.8 286.7 Q428.2 254.4 429.9 221.2" fill="none" stroke="#2f2c28" stroke-width="1.6" stroke-linecap="round"/>
+<path d="M430.6 222.0 Q530.4 223.6 629.3 220.6 M629.4 222.5 Q628.8 252.7 631.1 286.4 M629.8 287.1 Q529.3 286.7 429.2 285.8 M430.9 287.2 Q431.5 253.5 430.2 221.5" fill="none" stroke="#2f2c28" stroke-width="1.1" stroke-linecap="round" opacity="0.45"/>
+<text x="530" y="252" text-anchor="middle" font-family="-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif" font-size="17" font-weight="500" fill="#2f2c28">SQLite</text>
+<text x="530" y="272" text-anchor="middle" font-family="-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif" font-size="13" fill="#615c54">History, journals, profile</text>
+<path d="M219.1 330.0 L440.8 330.8 L440.5 395.1 L219.5 393.2 Z" fill="#efeaf6"/>
+<path d="M219.9 329.4 Q328.9 329.7 440.4 330.0 M439.5 330.9 Q441.9 361.8 438.8 392.7 M441.0 392.7 Q330.8 394.3 219.5 394.8 M218.7 393.0 Q219.8 360.1 220.9 329.3" fill="none" stroke="#5d4a91" stroke-width="1.6" stroke-linecap="round"/>
+<path d="M219.0 328.7 Q330.5 329.8 440.4 330.4 M440.9 331.3 Q440.7 360.8 439.9 393.1 M438.6 393.9 Q330.8 392.7 219.4 393.6 M220.6 394.1 Q220.4 363.0 219.7 330.8" fill="none" stroke="#5d4a91" stroke-width="1.1" stroke-linecap="round" opacity="0.45"/>
+<text x="330" y="360" text-anchor="middle" font-family="-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif" font-size="17" font-weight="500" fill="#5d4a91">Prompt assembly</text>
+<text x="330" y="380" text-anchor="middle" font-family="-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif" font-size="13" fill="#615c54">RAG + memory, once</text>
+<path d="M221.0 429.0 L441.0 430.5 L439.1 493.9 L220.3 495.0 Z" fill="#efeaf6"/>
+<path d="M219.7 430.2 Q331.5 431.2 441.2 429.9 M440.4 429.2 Q440.9 463.2 440.4 494.6 M439.2 495.1 Q331.9 495.9 220.1 494.8 M219.5 495.1 Q221.4 461.4 218.8 429.8" fill="none" stroke="#5d4a91" stroke-width="1.6" stroke-linecap="round"/>
+<path d="M220.1 430.8 Q330.0 428.2 440.9 428.8 M440.8 429.1 Q439.4 463.1 439.0 493.0 M440.0 494.6 Q331.3 494.7 221.2 494.0 M221.3 492.8 Q218.9 462.1 219.4 430.6" fill="none" stroke="#5d4a91" stroke-width="1.1" stroke-linecap="round" opacity="0.45"/>
+<text x="330" y="460" text-anchor="middle" font-family="-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif" font-size="17" font-weight="500" fill="#5d4a91">Ollama</text>
+<text x="330" y="480" text-anchor="middle" font-family="-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif" font-size="13" fill="#615c54">chat with tools</text>
+<path d="M220.3 530.1 L440.8 530.1 L439.5 593.7 L220.8 595.0 Z" fill="#efeaf6"/>
+<path d="M219.2 531.0 Q331.8 530.1 440.2 529.2 M440.1 530.0 Q440.4 560.1 441.3 594.0 M439.7 594.8 Q330.2 594.0 220.5 592.8 M220.1 593.8 Q221.8 563.7 219.4 529.9" fill="none" stroke="#5d4a91" stroke-width="1.6" stroke-linecap="round"/>
+<path d="M219.0 529.8 Q331.2 531.6 439.9 529.5 M439.1 530.3 Q441.7 560.5 440.8 592.7 M439.1 593.2 Q330.7 593.3 219.6 594.3 M218.9 594.6 Q218.5 562.0 219.3 529.2" fill="none" stroke="#5d4a91" stroke-width="1.1" stroke-linecap="round" opacity="0.45"/>
+<text x="330" y="560" text-anchor="middle" font-family="-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif" font-size="17" font-weight="500" fill="#5d4a91">execute_app_tool</text>
+<text x="330" y="580" text-anchor="middle" font-family="-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif" font-size="13" fill="#615c54">8 app functions</text>
+<path d="M330.1 83.9 Q329.6 98.7 330.1 113.3" fill="none" stroke="#2f2c28" stroke-width="1.6" stroke-linecap="round"/>
+<path d="M329.7 114.1 Q333.6 109.8 337.2 105.5" fill="none" stroke="#2f2c28" stroke-width="1.6" stroke-linecap="round"/>
+<path d="M330.4 113.7 Q326.9 110.1 323.5 105.2" fill="none" stroke="#2f2c28" stroke-width="1.6" stroke-linecap="round"/>
+<path d="M329.8 84.4 Q326.2 89.0 323.5 92.2" fill="none" stroke="#2f2c28" stroke-width="1.6" stroke-linecap="round"/>
+<path d="M329.7 84.2 Q333.1 87.7 337.2 92.5" fill="none" stroke="#2f2c28" stroke-width="1.6" stroke-linecap="round"/>
+<text x="292" y="105" text-anchor="end" font-family="-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif" font-size="12.5" fill="#615c54">streams</text>
+<path d="M330.6 185.2 Q329.7 255.6 328.9 323.3" fill="none" stroke="#2f2c28" stroke-width="1.6" stroke-linecap="round"/>
+<path d="M330.2 324.4 Q334.1 319.2 336.9 315.7" fill="none" stroke="#2f2c28" stroke-width="1.6" stroke-linecap="round"/>
+<path d="M330.0 324.2 Q326.1 319.1 322.7 315.0" fill="none" stroke="#2f2c28" stroke-width="1.6" stroke-linecap="round"/>
+<path d="M424.1 186.0 Q424.2 191.9 423.3 199.3" fill="none" stroke="#2f2c28" stroke-width="1.6" stroke-linecap="round" stroke-dasharray="7 6"/>
+<path d="M424.7 201.1 Q478.3 198.8 529.0 201.0" fill="none" stroke="#2f2c28" stroke-width="1.6" stroke-linecap="round" stroke-dasharray="7 6"/>
+<path d="M529.9 200.6 Q529.5 207.9 530.0 215.8" fill="none" stroke="#2f2c28" stroke-width="1.6" stroke-linecap="round" stroke-dasharray="7 6"/>
+<path d="M530.1 215.5 Q533.7 212.2 536.6 207.4" fill="none" stroke="#2f2c28" stroke-width="1.6" stroke-linecap="round"/>
+<path d="M530.2 215.9 Q526.1 211.2 523.1 206.9" fill="none" stroke="#2f2c28" stroke-width="1.6" stroke-linecap="round"/>
+<text x="478" y="193" text-anchor="middle" font-family="-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif" font-size="12.5" fill="#615c54">save</text>
+<path d="M155.9 290.7 Q155.6 326.1 155.3 359.8" fill="none" stroke="#2f2c28" stroke-width="1.6" stroke-linecap="round"/>
+<path d="M155.2 360.0 Q186.0 360.9 213.5 360.9" fill="none" stroke="#2f2c28" stroke-width="1.6" stroke-linecap="round"/>
+<path d="M214.2 360.3 Q210.2 356.4 205.8 353.5" fill="none" stroke="#2f2c28" stroke-width="1.6" stroke-linecap="round"/>
+<path d="M214.2 360.3 Q210.1 363.3 205.6 366.5" fill="none" stroke="#2f2c28" stroke-width="1.6" stroke-linecap="round"/>
+<text x="163" y="352" text-anchor="start" font-family="-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif" font-size="12.5" fill="#615c54">retrieve</text>
+<path d="M499.7 289.9 Q498.5 324.6 500.3 360.3" fill="none" stroke="#2f2c28" stroke-width="1.6" stroke-linecap="round"/>
+<path d="M499.4 361.0 Q473.5 359.5 446.4 360.2" fill="none" stroke="#2f2c28" stroke-width="1.6" stroke-linecap="round"/>
+<path d="M446.0 359.9 Q451.0 363.6 454.8 367.1" fill="none" stroke="#2f2c28" stroke-width="1.6" stroke-linecap="round"/>
+<path d="M446.5 359.5 Q450.5 356.9 454.3 353.0" fill="none" stroke="#2f2c28" stroke-width="1.6" stroke-linecap="round"/>
+<text x="508" y="352" text-anchor="start" font-family="-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif" font-size="12.5" fill="#615c54">recall</text>
+<path d="M329.0 395.3 Q329.6 408.8 329.5 424.9" fill="none" stroke="#2f2c28" stroke-width="1.6" stroke-linecap="round"/>
+<path d="M330.1 424.0 Q334.1 419.8 337.4 415.6" fill="none" stroke="#2f2c28" stroke-width="1.6" stroke-linecap="round"/>
+<path d="M330.3 423.6 Q326.7 420.1 322.7 415.8" fill="none" stroke="#2f2c28" stroke-width="1.6" stroke-linecap="round"/>
+<path d="M289.3 497.9 Q289.0 511.0 290.2 523.0" fill="none" stroke="#2f2c28" stroke-width="1.6" stroke-linecap="round"/>
+<path d="M290.4 523.9 Q293.5 519.8 296.7 515.2" fill="none" stroke="#2f2c28" stroke-width="1.6" stroke-linecap="round"/>
+<path d="M290.2 524.1 Q286.3 520.0 282.9 514.9" fill="none" stroke="#2f2c28" stroke-width="1.6" stroke-linecap="round"/>
+<text x="272" y="516" text-anchor="end" font-family="-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif" font-size="12.5" fill="#615c54">tool_calls</text>
+<path d="M369.4 523.0 Q368.9 511.8 369.8 498.9" fill="none" stroke="#2f2c28" stroke-width="1.6" stroke-linecap="round"/>
+<path d="M370.2 497.6 Q367.2 502.9 362.7 507.0" fill="none" stroke="#2f2c28" stroke-width="1.6" stroke-linecap="round"/>
+<path d="M369.9 498.0 Q374.1 501.9 376.9 507.0" fill="none" stroke="#2f2c28" stroke-width="1.6" stroke-linecap="round"/>
+<text x="378" y="516" text-anchor="start" font-family="-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif" font-size="12.5" fill="#615c54">role: tool</text>
+<path d="M440.5 561.9 Q521.5 563.0 600.2 561.2" fill="none" stroke="#2f2c28" stroke-width="1.6" stroke-linecap="round"/>
+<path d="M600.3 561.9 Q599.1 425.6 600.1 291.2" fill="none" stroke="#2f2c28" stroke-width="1.6" stroke-linecap="round"/>
+<path d="M599.9 292.2 Q596.5 296.0 593.2 300.5" fill="none" stroke="#2f2c28" stroke-width="1.6" stroke-linecap="round"/>
+<path d="M600.3 292.0 Q604.1 296.9 607.1 300.3" fill="none" stroke="#2f2c28" stroke-width="1.6" stroke-linecap="round"/>
+<path d="M439.6 562.4 Q444.7 565.6 448.4 568.7" fill="none" stroke="#2f2c28" stroke-width="1.6" stroke-linecap="round"/>
+<path d="M440.2 562.1 Q444.4 558.7 448.8 554.8" fill="none" stroke="#2f2c28" stroke-width="1.6" stroke-linecap="round"/>
+<text x="592" y="424" text-anchor="end" font-family="-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif" font-size="12.5" fill="#615c54">read / write</text>
+<path d="M219.4 463.1 Q131.3 463.2 39.0 461.0" fill="none" stroke="#2f2c28" stroke-width="1.6" stroke-linecap="round"/>
+<path d="M39.5 461.8 Q40.4 304.8 40.1 149.1" fill="none" stroke="#2f2c28" stroke-width="1.6" stroke-linecap="round"/>
+<path d="M39.1 150.4 Q123.2 150.4 205.7 150.0" fill="none" stroke="#2f2c28" stroke-width="1.6" stroke-linecap="round"/>
+<path d="M205.7 149.8 Q202.1 147.0 197.0 142.7" fill="none" stroke="#2f2c28" stroke-width="1.6" stroke-linecap="round"/>
+<path d="M206.3 150.1 Q202.1 153.0 197.3 156.6" fill="none" stroke="#2f2c28" stroke-width="1.6" stroke-linecap="round"/>
+<text x="50" y="200" text-anchor="start" font-family="-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif" font-size="12.5" fill="#615c54">response + client_events</text>
+</svg>
