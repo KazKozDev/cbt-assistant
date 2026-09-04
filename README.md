@@ -22,7 +22,9 @@ cd cbt-assistant
 start_cbt_assistant.bat
 ```
 
-The launcher sets up the Python environment, prepares Ollama, downloads `qwen3.5:9b`, starts the server on port 8000, and opens your browser; later launches reuse the same setup. On Linux, make sure `ollama serve` is running, run the steps manually, and open http://localhost:8000. English and Russian are switchable in Settings.
+The launcher sets up the Python environment, prepares Ollama, downloads `qwen3.5:9b` (~6.6 GB), starts the server on port 8000, and opens your browser; later launches reuse the same setup. On Linux, make sure `ollama serve` is running, run the steps manually, and open http://localhost:8000. English and Russian are switchable in Settings.
+
+**Hardware requirements:** 8+ GB RAM (16 GB recommended for smooth inference), ~10 GB free disk space for model weights and the local embedding index.
 
 > [!IMPORTANT]
 > CBT Assistant is a self-help and journaling tool — not a therapist, medical device, or crisis service. Its knowledge base follows evidence-based CBT protocols, but AI responses and self-assessments can still be wrong. If you may be in immediate danger or at risk of harming yourself or someone else, contact local emergency services or a crisis line now.
@@ -38,11 +40,11 @@ The launcher sets up the Python environment, prepares Ollama, downloads `qwen3.5
 
 ## Private AI mental health chatbot with local memory
 
-- Warm, non-judgmental dialogue with `qwen3.5:9b` running locally — nothing leaves your machine.
-- Grounded, not improvised: every clinical claim comes from the bundled CBT library via FastEmbed RAG and is cited as `[KB:chunk_id]`. Below the similarity threshold (0.46) the assistant gives general support instead of inventing protocols.
+- Warm, non-judgmental dialogue with `qwen3.5:9b` running locally — core chat generation never leaves your machine.
+- Grounded, not improvised: clinical guidance is retrieved from the bundled CBT library via FastEmbed RAG and cited as `[KB:chunk_id]`. Below the similarity threshold (0.46) the assistant offers supportive conversation instead of inventing protocols.
 - Writes your records for you: ask it to log a thought record or a sleep entry, launch an agreed SOS portal, or schedule a planned activity.
 - Remembers you across restarts: a personal profile and rolling summary persist in SQLite, so chats aren't isolated.
-- Voice mode — speech recognition and neural text-to-speech in English and Russian.
+- Voice mode (optional) — speech recognition and neural text-to-speech in English and Russian (requires internet access).
 
 ## How the local CBT assistant works
 
@@ -50,8 +52,7 @@ The launcher sets up the Python environment, prepares Ollama, downloads `qwen3.5
   <img src="assets/architecture.svg" alt="CBT Assistant architecture" width="100%">
 </p>
 
-
-At startup the Markdown CBT library is split by heading hierarchy and embedded locally with FastEmbed (`paraphrase-multilingual-mpnet-base-v2`); the model cannot bypass this retrieval path. Messages and structured records live in SQLite, while interface logs and screening state also use browser `localStorage`.
+At startup the Markdown CBT library is split by heading hierarchy and embedded locally with FastEmbed (`paraphrase-multilingual-mpnet-base-v2`); semantic retrieval strictly runs before response generation. Messages, structured records, and profile memory live in SQLite (`data/cbt_sessions.db`), while interface logs and screening state also use browser `localStorage`. Frontend UI assets (Lucide icons, Chart.js) are bundled locally for offline use.
 
 ```text
 GET    /api/knowledge/search?q=sleep&top_k=3
@@ -60,14 +61,25 @@ GET    /api/memory/{session_id}
 DELETE /api/memory/{session_id}
 ```
 
+### Data sovereignty & storage
+
+- **Database location:** `data/cbt_sessions.db` (single-file SQLite database).
+- **Backups:** Copy `data/cbt_sessions.db` to back up all diary entries, tests, and conversation memory.
+- **Data deletion:** Delete `data/cbt_sessions.db` and click **Reset all data** in Settings to clear browser `localStorage`.
+
 Index caching, rebuilds, and degraded-mode behaviour are described in [ARCHITECTURE](docs/ARCHITECTURE.md).
 
-## Limitations
+## Limitations & Safety
 
-- **Network** — text-to-speech, speech recognition, Google Fonts, CDN scripts, and YouTube media need internet access.
-- **Security** — binds to `0.0.0.0:8000` with permissive CORS and no auth or encryption. Keep it off public and untrusted networks.
-- **Performance** — chat quality, latency, and memory use depend on your hardware and model; chat is unavailable until the embedding index is built.
+- **Crisis safety** — CBT Assistant is designed for self-help and mild-to-moderate distress; it does **not** include automated real-time suicide or crisis detection. If you are experiencing acute distress, self-harm impulses, or suicidal thoughts, please contact local emergency services or a crisis line (e.g., 988 in the US/Canada, 112 in the EU).
+- **Network** — core chat, RAG, and journaling are 100% offline. Optional voice features (edge-tts synthesis, browser Web Speech API) and YouTube ambient media connect to external services.
+- **Security** — binds to `127.0.0.1:8000` by default (safe on public Wi-Fi). If you expose it to a local network (`HOST=0.0.0.0`), note that it has permissive CORS and no authentication layer; keep it off public or untrusted networks.
+- **Performance** — chat quality, latency, and memory use depend on your hardware and model; chat is unavailable until the embedding index finishes building.
 - **Platform** — no Docker image and no Linux launcher; Linux setup is manual.
+
+## License
+
+[MIT](LICENSE)
 
 <br>
 <br>
