@@ -1,6 +1,6 @@
 # Architecture
 
-CBT Assistant is a browser frontend backed by FastAPI, local Ollama chat and embedding models, a Markdown CBT knowledge base, and SQLite persistence.
+CBT Assistant is a browser frontend backed by FastAPI, a local Ollama chat model, a FastEmbed RAG pipeline, a Markdown CBT knowledge base, and SQLite persistence.
 
 <p align="center">
   <img src="../assets/architecture.svg" alt="CBT Assistant architecture" width="100%">
@@ -9,10 +9,10 @@ CBT Assistant is a browser frontend backed by FastAPI, local Ollama chat and emb
 
 ## Request path
 
-1. **Startup** — FastAPI initializes `data/cbt_sessions.db`, fingerprints `knowledge_base/*.md`, and restores a matching cached index or embeds the complete changed corpus through Ollama.
+1. **Startup** — FastAPI initializes `data/cbt_sessions.db`, fingerprints `knowledge_base/*.md`, and restores a matching cached index or embeds the complete changed corpus locally via FastEmbed (ONNX).
 2. **Retrieve** — every chat transport runs the same semantic search, relevance threshold, provenance serialization, and local retrieval trace.
 3. **Assemble** — the prompt combines explicitly delimited evidence passages, recent messages, synchronized records, structured profile memory, and any rolling session summary. Retrieved text is treated as data, not instructions.
-4. **Generate** — `src/llm/ollama_client.py` sends the request to the configured Ollama model. REST, streaming, or WebSocket responses return to the browser.
+4. **Generate** — `src/llm/ollama_client.py` sends the request to the configured Ollama model. REST, SSE streaming, or WebSocket responses return to the browser.
 5. **Persist** — messages and structured records are written to SQLite. Explicit personal facts update the profile immediately; after the configured threshold, `src/memory/summarizer.py` refreshes the session summary on every chat transport.
 
 ## RAG engineering contract
