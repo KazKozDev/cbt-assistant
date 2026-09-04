@@ -46,18 +46,10 @@ The launcher sets up the Python environment, prepares Ollama, downloads `qwen3.5
 
 ## How the local CBT assistant works
 
-```text
-Browser UI
-   ↓
-FastAPI REST + WebSocket API
-   ↓
-Prompt assembly ← CBT knowledge search
-   ↓                     ↓
-Ollama chat          FastEmbed (CPU / ONNX)
-   ↓                     ↓
-Response             Markdown knowledge base
-   └──────── SQLite + browser localStorage
-```
+<p align="center">
+  <img src="assets/architecture.svg" alt="CBT Assistant architecture" width="680">
+</p>
+
 
 At startup the Markdown CBT library is split by heading hierarchy and embedded locally with FastEmbed (`paraphrase-multilingual-mpnet-base-v2`); the model cannot bypass this retrieval path. Messages and structured records live in SQLite, while interface logs and screening state also use browser `localStorage`.
 
