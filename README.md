@@ -73,8 +73,8 @@ Index caching, rebuilds, and degraded-mode behaviour are described in [ARCHITECT
 <br>
 
 <p align="center">
-  <img src="assets/cbt-assistant-art-flow.gif" alt="CBT Assistant Art Flow" width="34%">&nbsp;&nbsp;
-  <img src="assets/cbt-assistant-art-mind.png" alt="CBT Assistant Art Mind" width="64%">
+  <img src="assets/cbt-assistant-art-flow.gif" alt="CBT Assistant Art Flow" style="width:34%; height:351px; object-fit:contain;">
+  <img src="assets/cbt-assistant-art-mind.png" alt="CBT Assistant Art Mind" style="width:64%; height:351px; object-fit:contain;">
 </p>
 
 <br>
