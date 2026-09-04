@@ -14,15 +14,7 @@ git clone https://github.com/KazKozDev/cbt-assistant.git
 cd cbt-assistant
 start_cbt_assistant.bat
 ```
-```bash
-# Linux
-git clone https://github.com/KazKozDev/cbt-assistant.git && cd cbt-assistant
-python3 -m venv .venv
-source .venv/bin/activate
-python -m pip install -r requirements.txt
-ollama pull qwen3.5:9b
-python backend/server.py
-```
+
 
 <p align="center">
   <img src="assets/CBT3.gif" alt="CBT Assistant opening SOS breathing support, reframing an anxious thought, and saving it to the Thought Diary" width="900">
