@@ -105,6 +105,7 @@ class SemanticRAG:
 
         digest = hashlib.sha256()
         digest.update(CHUNKING_VERSION.encode())
+        digest.update(self.embed_model.encode())
         digest.update(str(self.max_chunk_chars).encode())
         digest.update(str(self.overlap_chars).encode())
         chunks: list[dict[str, Any]] = []

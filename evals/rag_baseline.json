@@ -1,7 +1,7 @@
 {
   "measured_at": "2026-09-04",
   "embedding_model": "sentence-transformers/paraphrase-multilingual-mpnet-base-v2",
-  "index_version": "e6071a274112c719",
+  "index_version": "a07db2f30577badb",
   "chunking_version": "markdown-hierarchy-v2",
   "chunk_count": 53,
   "top_k": 3,

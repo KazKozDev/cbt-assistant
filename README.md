@@ -71,7 +71,7 @@ The threshold is measured, not guessed. `evals/rag_retrieval.json` holds 18 vers
 | MRR | 0.702 |
 | Abstention accuracy (negative cases) | 100% (1.0) |
 
-Measured on `paraphrase-multilingual-mpnet-base-v2` at threshold `0.46`, index version `e6071a274112c719`, 53 chunks. The lowest passing positive scored `0.495` and the highest negative scored `0.255` — the threshold sits in that gap. Reproduce with:
+Measured on `paraphrase-multilingual-mpnet-base-v2` at threshold `0.46`, index version `a07db2f30577badb`, 53 chunks. The lowest passing positive scored `0.495` and the highest negative scored `0.255` — the threshold sits in that gap. Reproduce with:
 
 ```bash
 python scripts/evaluate_rag.py --top-k 3 --threshold 0.46
