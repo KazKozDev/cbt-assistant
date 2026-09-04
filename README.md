@@ -77,10 +77,6 @@ Index caching, rebuilds, and degraded-mode behaviour are described in [ARCHITECT
 - **Performance** — chat quality, latency, and memory use depend on your hardware and model; chat is unavailable until the embedding index finishes building.
 - **Platform** — no Docker image and no Linux launcher; Linux setup is manual.
 
-## License
-
-[MIT](LICENSE)
-
 <br>
 <br>
 
