@@ -184,3 +184,23 @@ async def test_real_fastembed_retrieval_and_small_talk_rejection(tmp_path):
     assert len(clinical_res["results"]) == 1
     assert "Контроль стимулов" in clinical_res["results"][0]["chunk"]["section_path"]
     assert clinical_res["trace"]["status"] == "grounded"
+
+
+def test_index_version_changes_with_embed_model(tmp_path):
+    kb_path = tmp_path / "kb"
+    kb_path.mkdir()
+    (kb_path / "test.md").write_text(
+        "# Protocol\n\n"
+        "Leave the bed after twenty minutes awake. This is stimulus control guidance "
+        "with enough detail to form a useful retrieval chunk.",
+        encoding="utf-8",
+    )
+
+    rag_model_a = SemanticRAG(kb_dir=kb_path, embed_model="model-alpha")
+    _, version_a = rag_model_a._load_chunks()
+
+    rag_model_b = SemanticRAG(kb_dir=kb_path, embed_model="model-beta")
+    _, version_b = rag_model_b._load_chunks()
+
+    assert version_a != version_b
+
