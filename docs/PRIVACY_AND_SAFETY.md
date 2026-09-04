@@ -12,15 +12,13 @@ The following paths use the machine hosting the application and its configured l
 - SQLite persistence;
 - bundled SOS images and ambient audio.
 
-The application is local-first rather than strictly offline. These optional or frontend resources can contact external services:
+The application is local-first. Core chat, RAG, and journaling are strictly offline. These optional features can contact external services:
 
-- Google Fonts (falls back to system fonts offline);
-- Microsoft Edge TTS, which receives selected speech text;
-- browser speech recognition, depending on the browser and operating system;
-- YouTube thumbnails and video playback;
-- Chart.js loaded when a printable PDF report window is created.
+- Microsoft Edge TTS (optional voice responses);
+- browser speech recognition (optional microphone input, depending on browser);
+- YouTube thumbnails and video playback (optional SOS ambient media).
 
-Frontend UI libraries (Lucide icons and Chart.js dashboard charts) are bundled locally for offline use.
+Frontend UI assets (Inter font, Lucide icons, and Chart.js for dashboards and PDF reports) are bundled locally for 100% offline use.
 
 ## Network and data boundaries
 

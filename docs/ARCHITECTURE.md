@@ -22,7 +22,7 @@ The bundled knowledge base covers clinical CBT guidance, anxiety protocols, inso
 - Markdown is split by its complete heading hierarchy. Oversized sections are bounded with controlled overlap. The current corpus produces 53 addressable chunks instead of 34 coarse `##` sections.
 - The index is fingerprinted from document content and chunking settings. A matching NumPy index is restored from `data/rag_index.npz`; changed content is embedded in batches and swapped into service only after a complete successful build.
 - A failed first build prevents RAG from reporting ready. If a rebuild fails while an older complete index is in memory, status becomes `degraded` and the previous index remains usable.
-- The default relevance threshold is `0.35`. An unsupported clinical request must not receive an invented protocol or clinical justification.
+- The default relevance threshold is `0.46`. An unsupported clinical request must not receive an invented protocol or clinical justification.
 - Each retrieval writes an ignored local trace to `data/rag_traces.jsonl`: query, candidates, selected chunk IDs, scores, latency, embedding model, threshold, and index version. These traces can contain sensitive query text.
 - `GET /api/knowledge/status` reports readiness, index version, model, threshold, cache use, chunk count, and the latest index error.
 - `GET /api/knowledge/search?q=sleep&top_k=3` exposes the same versioned index used by chat.
