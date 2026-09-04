@@ -41,7 +41,7 @@ The launcher sets up the Python environment, prepares Ollama, downloads `qwen3.5
 ## Private AI mental health chatbot with local memory
 
 - Warm, non-judgmental dialogue with `qwen3.5:9b` running locally — core chat generation never leaves your machine.
-- Grounded, not improvised: clinical guidance is retrieved from the bundled CBT library via FastEmbed RAG and cited as `[KB:chunk_id]`. Below the similarity threshold (0.46) the assistant offers supportive conversation instead of inventing protocols.
+- Grounded, not improvised: clinical guidance is retrieved from the bundled CBT library via FastEmbed RAG and cited as `[KB:chunk_id]`. Below the similarity threshold (`0.46`) the assistant offers supportive conversation instead of inventing protocols — measured at **recall@3 85.7%, MRR 0.70, 100% abstention accuracy** across 18 retrieval cases.
 - Writes your records for you: ask it to log a thought record or a sleep entry, launch an agreed SOS portal, or schedule a planned activity.
 - Remembers you across restarts: a personal profile and rolling summary persist in SQLite, so chats aren't isolated.
 - Voice mode (optional) — speech recognition and neural text-to-speech in English and Russian (requires internet access).
@@ -60,6 +60,24 @@ GET    /api/knowledge/status
 GET    /api/memory/{session_id}
 DELETE /api/memory/{session_id}
 ```
+
+### Retrieval quality
+
+The threshold is measured, not guessed. `evals/rag_retrieval.json` holds 18 versioned cases — 14 that must return a specific knowledge-base section and 4 out-of-scope questions that must return nothing at all — scored by `src/rag/evaluation.py`:
+
+| Metric | Result |
+|---|---|
+| recall@3 | 85.7% (0.857) |
+| MRR | 0.702 |
+| Abstention accuracy (negative cases) | 100% (1.0) |
+
+Measured on `paraphrase-multilingual-mpnet-base-v2` at threshold `0.46`, index version `e6071a274112c719`, 53 chunks. The lowest passing positive scored `0.495` and the highest negative scored `0.255` — the threshold sits in that gap. Reproduce with:
+
+```bash
+python scripts/evaluate_rag.py --top-k 3 --threshold 0.46
+```
+
+This is a repository regression set, not a clinical-quality evaluation.
 
 ### Data sovereignty & storage
 

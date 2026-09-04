@@ -1,16 +1,16 @@
 {
-  "measured_at": "2026-08-24",
-  "embedding_model": "qwen3-embedding:4b",
+  "measured_at": "2026-09-04",
+  "embedding_model": "sentence-transformers/paraphrase-multilingual-mpnet-base-v2",
   "index_version": "e6071a274112c719",
   "chunking_version": "markdown-hierarchy-v2",
   "chunk_count": 53,
   "top_k": 3,
-  "score_threshold": 0.35,
+  "score_threshold": 0.46,
   "case_count": 18,
   "positive_count": 14,
   "negative_count": 4,
-  "recall_at_3": 1.0,
-  "mrr": 0.9286,
+  "recall_at_3": 0.8571,
+  "mrr": 0.7024,
   "abstention_accuracy": 1.0,
-  "notes": "Local live run against Ollama. This is a small repository regression set, not a clinical-quality evaluation. The lowest positive top-1 score was 0.459315 and the highest negative top-1 score was 0.314755."
+  "notes": "Local live run via FastEmbed (CPU / ONNX). This is a repository regression set, not a clinical-quality evaluation. The lowest positive top-1 score was 0.494955 and the highest negative top-1 score was 0.255325."
 }

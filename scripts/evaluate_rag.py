@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run the live retrieval benchmark against the configured Ollama embedding model."""
+"""Run the live retrieval benchmark against the configured FastEmbed model."""
 
 import argparse
 import asyncio
