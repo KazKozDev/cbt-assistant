@@ -3,7 +3,7 @@
 CBT Assistant is a browser frontend backed by FastAPI, local Ollama chat and embedding models, a Markdown CBT knowledge base, and SQLite persistence.
 
 <p align="center">
-  <img src="../assets/architecture.svg" alt="CBT Assistant architecture" width="680">
+  <img src="../assets/architecture.svg" alt="CBT Assistant architecture" width="100%">
 </p>
 
 

@@ -47,7 +47,7 @@ The launcher sets up the Python environment, prepares Ollama, downloads `qwen3.5
 ## How the local CBT assistant works
 
 <p align="center">
-  <img src="assets/architecture.svg" alt="CBT Assistant architecture" width="680">
+  <img src="assets/architecture.svg" alt="CBT Assistant architecture" width="100%">
 </p>
 
 
