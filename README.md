@@ -24,7 +24,7 @@ start_cbt_assistant.bat
 
 The launcher sets up the Python environment, prepares Ollama, downloads `qwen3.5:9b` (~6.6 GB), starts the server on port 8000, and opens your browser; later launches reuse the same setup. On Linux, make sure `ollama serve` is running, run the steps manually, and open http://localhost:8000. English and Russian are switchable in Settings.
 
-**Hardware requirements:** 8+ GB RAM (16 GB recommended for smooth inference), ~10 GB free disk space for model weights and the local embedding index.
+**Hardware requirements:** 16 GB RAM recommended for `qwen3.5:9b` (8 GB is sufficient if switching to smaller 3B/4B models in Settings), ~10 GB free disk space for model weights and the local embedding index.
 
 > [!IMPORTANT]
 > CBT Assistant is a self-help and journaling tool — not a therapist, medical device, or crisis service. Its knowledge base follows evidence-based CBT protocols, but AI responses and self-assessments can still be wrong. If you may be in immediate danger or at risk of harming yourself or someone else, contact local emergency services or a crisis line now.
@@ -52,7 +52,7 @@ The launcher sets up the Python environment, prepares Ollama, downloads `qwen3.5
   <img src="assets/architecture.svg" alt="CBT Assistant architecture" width="100%">
 </p>
 
-At startup the Markdown CBT library is split by heading hierarchy and embedded locally with FastEmbed (`paraphrase-multilingual-mpnet-base-v2`); semantic retrieval strictly runs before response generation. Messages, structured records, and profile memory live in SQLite (`data/cbt_sessions.db`), while interface logs and screening state also use browser `localStorage`. Frontend UI assets (Lucide icons, Chart.js) are bundled locally for offline use.
+At startup the Markdown CBT library is split by heading hierarchy and embedded locally with FastEmbed (`paraphrase-multilingual-mpnet-base-v2`); semantic retrieval strictly runs before response generation. Messages, structured records, and profile memory live in SQLite (`data/cbt_sessions.db`), while interface logs and screening state also use browser `localStorage`. Frontend UI assets (Inter font, Lucide icons, and Chart.js for dashboard and PDF reports) are bundled locally for 100% offline use.
 
 ```text
 GET    /api/knowledge/search?q=sleep&top_k=3
