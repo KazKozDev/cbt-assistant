@@ -14,18 +14,17 @@ The following paths use the machine hosting the application and its configured l
 
 The application is local-first rather than strictly offline. These optional or frontend resources can contact external services:
 
-- Google Fonts;
-- Lucide icons and Chart.js loaded from public CDNs;
+- Google Fonts (falls back to system fonts offline);
 - Microsoft Edge TTS, which receives selected speech text;
 - browser speech recognition, depending on the browser and operating system;
 - YouTube thumbnails and video playback;
 - Chart.js loaded when a printable PDF report window is created.
 
-A strictly offline deployment requires replacing or disabling those external fonts, scripts, speech, and video integrations.
+Frontend UI libraries (Lucide icons and Chart.js dashboard charts) are bundled locally for offline use.
 
 ## Network and data boundaries
 
-- The FastAPI server binds to `0.0.0.0:8000` and enables permissive CORS.
+- The FastAPI server binds to `127.0.0.1:8000` by default. It can be exposed to the local network via `HOST=0.0.0.0`.
 - The application has no user accounts, authentication, encryption layer, or multi-user isolation.
 - Do not expose the server to the public internet or an untrusted network without authentication and restrictive network controls.
 - Personal profile memory is local and session-scoped but not encrypted.

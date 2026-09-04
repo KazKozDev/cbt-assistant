@@ -57,7 +57,7 @@ The model can call application functions when relevant:
 
 | Setting | Default | What it means |
 |---|---|---|
-| App address | `http://localhost:8000` | Browser interface and API; server binds to `0.0.0.0:8000` |
+| App address | `http://127.0.0.1:8000` | Browser interface and API; server binds to `127.0.0.1:8000` (override with `HOST` / `PORT`) |
 | Ollama address | `http://127.0.0.1:11434` | Override with `OLLAMA_BASE_URL` |
 | Chat model | `qwen3.5:9b` | `OLLAMA_MODEL` or `CBT_ASSISTANT_CHAT_MODEL`; any installed completion model can be selected in Settings |
 | Embedding model | `sentence-transformers/paraphrase-multilingual-mpnet-base-v2` | FastEmbed ONNX model; override with `RAG_EMBED_MODEL` |
