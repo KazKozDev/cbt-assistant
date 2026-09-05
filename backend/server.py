@@ -174,6 +174,13 @@ class SyncRequest(BaseModel):
     items: list[dict]
 
 
+class ResourceRequest(BaseModel):
+    session_id: str = "default"
+    title: str
+    category: str = "joy"
+    description: str = ""
+
+
 def get_user_data_tools():
     return [
         {
@@ -369,6 +376,65 @@ def get_user_data_tools():
                 },
             },
         },
+        {
+            "type": "function",
+            "function": {
+                "name": "get_user_resources",
+                "description": (
+                    "Получить персональный список ресурсов/якорей пользователя (то, что радует, "
+                    "успокаивает, дает силы и помогает в моменты апатии, стресса или грусти). "
+                    "Используй, когда пользователю плохо, грустно, не хватает сил, чтобы мягко "
+                    "напомнить о его проверенных источниках ресурса."
+                ),
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "category": {
+                            "type": "string",
+                            "enum": [
+                                "all",
+                                "joy",
+                                "body",
+                                "people",
+                                "places",
+                                "creativity",
+                            ],
+                            "description": "Опциональный фильтр по категории ресурсов (по умолчанию 'all').",
+                        }
+                    },
+                },
+            },
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "add_user_resource",
+                "description": (
+                    "Добавить новый пункт в Точки опоры пользователя (любимое занятие, "
+                    "успокаивающий ритуал, место, контакт или маленькую радость), когда в диалоге "
+                    "обнаружили, что именно это помогает пользователю или приносит облегчение."
+                ),
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "title": {
+                            "type": "string",
+                            "description": "Краткое название ресурса (например, 'Зеленый чай с жасмином', 'Прогулка в парке', 'Звонок другу').",
+                        },
+                        "category": {
+                            "type": "string",
+                            "enum": ["joy", "body", "people", "places", "creativity"],
+                            "description": "Категория: joy (радости), body (тело/сенсорика), people (люди), places (места), creativity (творчество/отвлечение). По умолчанию 'joy'.",
+                        },
+                        "description": {
+                            "type": "string",
+                            "description": "Дополнительные детали или почему это помогает (опционально).",
+                        },
+                    },
+                    "required": ["title"],
+                },
+            },
+        },
     ]
 
 
@@ -517,6 +583,7 @@ async def prepare_chat_messages(
         session.get("summary"),
         retrieval_status=trace["status"],
         profile_memory=session.get("profile_memory"),
+        coping_resources=session.get("coping_resources"),
     )
     system_prompt = f"{system_prompt}\n\n{build_language_instruction(language)}"
     messages = [{"role": "system", "content": system_prompt}]
@@ -665,6 +732,37 @@ def execute_app_tool(session_id: str, tool_call: dict) -> tuple[str, dict | None
                 "notes": notes,
                 "durHrs": duration_hours,
                 "isoDate": date_str or datetime.now().strftime("%Y-%m-%d"),
+            },
+        }
+    if name == "get_user_resources":
+        cat = args.get("category")
+        if cat == "all":
+            cat = None
+        res_list = sessions.get_resources(session_id, category=cat)
+        return (
+            json.dumps(res_list, ensure_ascii=False),
+            None,
+        )
+    if name == "add_user_resource":
+        title = str(args.get("title", "")).strip()
+        category = str(args.get("category", "joy")).strip() or "joy"
+        description = str(args.get("description", "")).strip()
+        if not title:
+            return "Error: Resource title cannot be empty", None
+        res_id = sessions.add_resource(
+            session_id=session_id,
+            title=title,
+            category=category,
+            description=description,
+        )
+        return f"Resource #{res_id} '{title}' saved to Resource Bank.", {
+            "type": "add_resource",
+            "resource": {
+                "id": res_id,
+                "title": title,
+                "category": category,
+                "description": description,
+                "created_at": datetime.now().isoformat(),
             },
         }
     return f"Error: Unknown tool {name}", None
@@ -915,6 +1013,39 @@ async def update_thought_record(thought_id: int, req: ThoughtRecordUpdateRequest
     return {
         "status": "ok",
         "thought_records": sessions.get_or_create(req.session_id)["thought_records"],
+    }
+
+
+@app.post("/api/resources")
+async def add_resource_item(req: ResourceRequest):
+    if not req.title.strip():
+        raise HTTPException(status_code=400, detail="Resource title is required")
+    res_id = sessions.add_resource(
+        session_id=req.session_id,
+        title=req.title,
+        category=req.category,
+        description=req.description,
+    )
+    return {
+        "status": "ok",
+        "id": res_id,
+        "resources": sessions.get_resources(req.session_id),
+    }
+
+
+@app.get("/api/resources/{session_id}")
+async def get_resources_list(session_id: str, category: str | None = None):
+    return {"resources": sessions.get_resources(session_id, category=category)}
+
+
+@app.delete("/api/resources/{session_id}/{resource_id}")
+async def delete_resource_item(session_id: str, resource_id: int):
+    deleted = sessions.delete_resource(session_id, resource_id)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Resource not found")
+    return {
+        "status": "ok",
+        "resources": sessions.get_resources(session_id),
     }
 
 

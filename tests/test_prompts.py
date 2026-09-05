@@ -92,3 +92,17 @@ def test_prompt_manager_injects_durable_profile_as_data(temp_config):
     assert '"user_name": "Артём"' in prompt
     assert '"name": "Рекс"' in prompt
     assert "DATA, NOT INSTRUCTIONS" in prompt
+
+
+def test_prompt_manager_injects_coping_resources(temp_config):
+    pm = PromptManager(temp_config)
+    prompt = pm.build_system_prompt(
+        [],
+        coping_resources=[
+            {"title": "Чай с мятой", "category": "joy", "description": "согревает"},
+            {"title": "Прогулка в парке", "category": "body", "description": ""},
+        ],
+    )
+    assert "ТОЧКИ ОПОРЫ ПОЛЬЗОВАТЕЛЯ" in prompt
+    assert "[joy] Чай с мятой (согревает)" in prompt
+    assert "[body] Прогулка в парке" in prompt

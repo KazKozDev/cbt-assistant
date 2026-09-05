@@ -107,12 +107,12 @@ Index caching, rebuilds, and degraded-mode behaviour are described in [ARCHITECT
 <br>
 
 <p align="center">
-  <a href="start_cbt_assistant.command"><img alt="macOS" src="https://img.shields.io/badge/macOS-2D6A4F.svg?logo=apple&amp;logoColor=white" height="28"></a>
-  <a href="start_cbt_assistant.bat"><img alt="Windows" src="https://img.shields.io/badge/Windows-0078D4.svg?logo=windows&amp;logoColor=white" height="28"></a>
-  <a href="#installation"><img alt="Linux" src="https://img.shields.io/badge/Linux-FCC624.svg?logo=linux&amp;logoColor=black" height="28"></a>
-  <a href="https://github.com/KazKozDev/cbt-assistant/actions/workflows/tests.yml"><img alt="CI" src="https://github.com/KazKozDev/cbt-assistant/actions/workflows/tests.yml/badge.svg" height="28"></a>
-  <a href="https://www.python.org/"><img alt="Python 3.10+" src="https://img.shields.io/badge/Python-3.10%2B-3776AB.svg?logo=python&amp;logoColor=white" height="28"></a>
-  <a href="https://github.com/KazKozDev/cbt-assistant/blob/main/LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-blue.svg" height="28"></a>
+  <a href="start_cbt_assistant.command"><img alt="macOS" src="https://img.shields.io/badge/macOS-000000.svg?logo=apple&amp;logoColor=white" height="28"></a>
+  <a href="start_cbt_assistant.bat"><img alt="Windows" src="https://img.shields.io/badge/Windows-000000.svg?logo=windows&amp;logoColor=white" height="28"></a>
+  <a href="#installation"><img alt="Linux" src="https://img.shields.io/badge/Linux-000000.svg?logo=linux&amp;logoColor=white" height="28"></a>
+  <a href="https://github.com/KazKozDev/cbt-assistant/actions/workflows/tests.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/KazKozDev/cbt-assistant/tests.yml?branch=main&amp;style=flat&amp;label=CI&amp;logo=github&amp;logoColor=white&amp;labelColor=000000&amp;color=000000" height="28"></a>
+  <a href="https://www.python.org/"><img alt="Python 3.10+" src="https://img.shields.io/badge/Python-3.10%2B-000000.svg?logo=python&amp;logoColor=white" height="28"></a>
+  <a href="https://github.com/KazKozDev/cbt-assistant/blob/main/LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-000000.svg" height="28"></a>
 </p>
 
 <p align="center">

@@ -23,6 +23,7 @@ def test_init_db(db_manager):
         assert "sleep_logs" in tables
         assert "tests" in tables
         assert "activities" in tables
+        assert "coping_resources" in tables
 
 
 def test_get_or_create_session(db_manager):
@@ -141,3 +142,59 @@ def test_sync_and_get_activities(db_manager):
     assert len(fetched) == 1
     assert fetched[0]["activity_text"] == "Walk the dog"
     assert fetched[0]["done"] == 1
+
+
+def test_add_and_get_resources(db_manager):
+    session_id = "test_sess_resources"
+    r_id = db_manager.add_resource(
+        session_id=session_id,
+        title="Зеленый чай с жасмином",
+        category="joy",
+        description="Заварить горячим и пить не спеша",
+    )
+    assert r_id is not None
+
+    # Get all resources
+    all_res = db_manager.get_resources(session_id)
+    assert len(all_res) == 1
+    assert all_res[0]["title"] == "Зеленый чай с жасмином"
+    assert all_res[0]["category"] == "joy"
+    assert all_res[0]["description"] == "Заварить горячим и пить не спеша"
+
+    # Add second resource in different category
+    db_manager.add_resource(
+        session_id=session_id,
+        title="Прогулка в парке",
+        category="body",
+        description="15 минут на свежем воздухе",
+    )
+
+    # Filter by category
+    joy_res = db_manager.get_resources(session_id, category="joy")
+    assert len(joy_res) == 1
+    assert joy_res[0]["title"] == "Зеленый чай с жасмином"
+
+    body_res = db_manager.get_resources(session_id, category="body")
+    assert len(body_res) == 1
+    assert body_res[0]["title"] == "Прогулка в парке"
+
+    # Check get_or_create includes coping_resources
+    sess = db_manager.get_or_create(session_id)
+    assert len(sess["coping_resources"]) == 2
+
+
+def test_delete_resource(db_manager):
+    session_id = "test_sess_delete_res"
+    r_id = db_manager.add_resource(
+        session_id=session_id,
+        title="Любимый плейлист",
+        category="joy",
+    )
+
+    assert len(db_manager.get_resources(session_id)) == 1
+    deleted = db_manager.delete_resource(session_id, r_id)
+    assert deleted is True
+    assert len(db_manager.get_resources(session_id)) == 0
+
+    # Deleting non-existent returns False
+    assert db_manager.delete_resource(session_id, 9999) is False
