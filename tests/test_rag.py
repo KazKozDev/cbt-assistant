@@ -203,4 +203,3 @@ def test_index_version_changes_with_embed_model(tmp_path):
     _, version_b = rag_model_b._load_chunks()
 
     assert version_a != version_b
-
