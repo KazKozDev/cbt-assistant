@@ -2161,5 +2161,232 @@ function refreshLocalizedCBT() {
     if (document.getElementById('rhythmSection')?.style.display === 'block') {
         renderActivities();
     }
+    if (document.getElementById('resourcesModal')?.style.display === 'flex') {
+        renderResourceWorkspace();
+    }
 }
 window.refreshLocalizedCBT = refreshLocalizedCBT;
+
+// --- GROUNDING POINTS / COPING RESOURCES (ТОЧКИ ОПОРЫ) ---
+const RESOURCE_CATEGORIES = {
+    joy: { labelKey: 'cat_joy', sectionTitleKey: 'resource_section_joy_title', sectionDescKey: 'resource_section_joy_desc' },
+    body: { labelKey: 'cat_body', sectionTitleKey: 'resource_section_body_title', sectionDescKey: 'resource_section_body_desc' },
+    people: { labelKey: 'cat_people', sectionTitleKey: 'resource_section_people_title', sectionDescKey: 'resource_section_people_desc' },
+    places: { labelKey: 'cat_places', sectionTitleKey: 'resource_section_places_title', sectionDescKey: 'resource_section_places_desc' },
+    creativity: { labelKey: 'cat_creativity', sectionTitleKey: 'resource_section_creativity_title', sectionDescKey: 'resource_section_creativity_desc' }
+};
+
+let _currentResourceFilter = 'all';
+let _cachedResources = [];
+
+function _escapeResourceHtml(str) {
+    if (!str) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
+function resourceUi(key) {
+    return window.t ? window.t(key) : key;
+}
+
+function openResourceAddModal() {
+    const form = document.getElementById('resourceAddForm');
+    if (form) form.reset();
+    closeModal('resourcesModal');
+    openModal('resourceAddModal');
+    setTimeout(() => document.getElementById('resTitleInput')?.focus(), 50);
+}
+window.openResourceAddModal = openResourceAddModal;
+
+function closeResourceAddModal() {
+    closeModal('resourceAddModal');
+    openModal('resourcesModal');
+    renderResourceWorkspace();
+}
+window.closeResourceAddModal = closeResourceAddModal;
+
+async function openResourcesModal() {
+    openModal('resourcesModal');
+    await loadResources();
+}
+window.openResourcesModal = openResourcesModal;
+
+async function loadResources() {
+    const listEl = document.getElementById('resourcesList');
+    if (!listEl) return;
+    listEl.innerHTML = `<div class="resource-loading">${_escapeResourceHtml(resourceUi('loading'))}</div>`;
+    try {
+        const res = await fetch(`${API}/api/resources/${SESSION_ID}`).then(r => r.json());
+        _cachedResources = res.resources || [];
+        renderResourceWorkspace();
+    } catch (e) {
+        listEl.innerHTML = `<div class="resource-load-error">${_escapeResourceHtml(resourceUi('resource_load_error'))}</div>`;
+    }
+}
+window.loadResources = loadResources;
+
+function filterResourcesCategory(category) {
+    if (category !== 'all' && !RESOURCE_CATEGORIES[category]) return;
+    _currentResourceFilter = category;
+    renderResourceWorkspace();
+}
+window.filterResourcesCategory = filterResourcesCategory;
+
+function renderResourceWorkspace() {
+    const categoryCounts = { all: _cachedResources.length };
+    Object.keys(RESOURCE_CATEGORIES).forEach(category => {
+        categoryCounts[category] = _cachedResources.filter(item => item.category === category).length;
+    });
+
+    document.querySelectorAll('.resource-category-nav-item').forEach(btn => {
+        const category = btn.getAttribute('data-cat');
+        const isActive = category === _currentResourceFilter;
+        btn.classList.toggle('active', isActive);
+        btn.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+        const countEl = document.getElementById(`resCount-${category}`);
+        if (countEl) countEl.textContent = String(categoryCounts[category] || 0);
+    });
+
+    const activeCategory = RESOURCE_CATEGORIES[_currentResourceFilter];
+    const titleKey = activeCategory?.sectionTitleKey || 'resource_section_all_title';
+    const descKey = activeCategory?.sectionDescKey || 'resource_section_all_desc';
+    const titleEl = document.getElementById('resourceSectionTitle');
+    const descriptionEl = document.getElementById('resourceSectionDescription');
+    if (titleEl) titleEl.textContent = resourceUi(titleKey);
+    if (descriptionEl) descriptionEl.textContent = resourceUi(descKey);
+
+    const visibleResources = _currentResourceFilter === 'all'
+        ? _cachedResources
+        : _cachedResources.filter(item => item.category === _currentResourceFilter);
+    renderResourcesList(visibleResources);
+}
+window.renderResourceWorkspace = renderResourceWorkspace;
+
+function renderResourcesList(items) {
+    const listEl = document.getElementById('resourcesList');
+    if (!listEl) return;
+
+    if (!items || !items.length) {
+        listEl.innerHTML = `
+            <div class="resource-empty">
+                <div class="resource-empty-icon">
+                    <i data-lucide="anchor" aria-hidden="true"></i>
+                </div>
+                <div class="resource-empty-title">${_escapeResourceHtml(resourceUi('resource_empty_title'))}</div>
+                <div class="resource-empty-text">${_escapeResourceHtml(resourceUi('resource_empty_desc'))}</div>
+            </div>`;
+        if (window.lucide) lucide.createIcons();
+        return;
+    }
+
+    listEl.innerHTML = items.map(item => {
+        const catInfo = RESOURCE_CATEGORIES[item.category] || RESOURCE_CATEGORIES.joy;
+        const catLabel = resourceUi(catInfo.labelKey);
+        const descHtml = item.description ? `<div class="resource-item-desc">${_escapeResourceHtml(item.description)}</div>` : '';
+        const safeId = Number(item.id);
+        const deleteButton = Number.isFinite(safeId) ? `
+                <button type="button" class="resource-item-del-btn" onclick="deleteResourceItem(${safeId})" title="${_escapeResourceHtml(resourceUi('delete'))}">
+                    <i data-lucide="trash-2" aria-hidden="true"></i>
+                </button>` : '';
+        return `
+            <div class="resource-item-row" id="resCard-${item.id}">
+                <div class="resource-item-content">
+                    <div class="resource-item-meta">${_escapeResourceHtml(catLabel)}</div>
+                    <div class="resource-item-title">${_escapeResourceHtml(item.title)}</div>
+                    ${descHtml}
+                </div>
+                ${deleteButton}
+            </div>`;
+    }).join('');
+
+    if (window.lucide) lucide.createIcons();
+}
+
+async function submitNewResource(event) {
+    event.preventDefault();
+    const titleInput = document.getElementById('resTitleInput');
+    const catSelect = document.getElementById('resCategorySelect');
+    const descInput = document.getElementById('resDescInput');
+    if (!titleInput || !titleInput.value.trim()) return;
+
+    const title = titleInput.value.trim();
+    const category = catSelect ? catSelect.value : 'joy';
+    const description = descInput ? descInput.value.trim() : '';
+    const saveBtn = document.getElementById('resourceSaveBtn');
+
+    try {
+        if (saveBtn) {
+            saveBtn.disabled = true;
+            saveBtn.textContent = resourceUi('resource_saving');
+        }
+        const resp = await fetch(`${API}/api/resources`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                session_id: SESSION_ID,
+                title: title,
+                category: category,
+                description: description
+            })
+        });
+        if (resp.ok) {
+            titleInput.value = '';
+            if (descInput) descInput.value = '';
+            await loadResources();
+            closeModal('resourceAddModal');
+            openModal('resourcesModal');
+        } else {
+            alert(resourceUi('resource_save_error'));
+        }
+    } catch (err) {
+        console.error('Failed to add resource:', err);
+        alert(resourceUi('resource_save_error'));
+    } finally {
+        if (saveBtn) {
+            saveBtn.disabled = false;
+            saveBtn.textContent = resourceUi('resource_save');
+        }
+    }
+}
+window.submitNewResource = submitNewResource;
+
+async function deleteResourceItem(id) {
+    if (!confirm(resourceUi('resource_delete_confirm'))) {
+        return;
+    }
+    try {
+        const resp = await fetch(`${API}/api/resources/${SESSION_ID}/${id}`, {
+            method: 'DELETE'
+        });
+        if (resp.ok) {
+            await loadResources();
+        }
+    } catch (err) {
+        console.error('Failed to delete resource:', err);
+    }
+}
+window.deleteResourceItem = deleteResourceItem;
+
+function addResourceFromAI(resource) {
+    if (!resource) return;
+    const catInfo = RESOURCE_CATEGORIES[resource.category] || RESOURCE_CATEGORIES.joy;
+    const isEn = cbtLocale() === 'en';
+    const catLabel = resourceUi(catInfo.labelKey);
+    const notice = isEn
+        ? `Added to your <a href="#" onclick="openResourcesModal(); return false;" style="color:var(--accent);text-decoration:underline;">Grounding Points</a>: <b>«${_escapeResourceHtml(resource.title)}»</b> (${catLabel})`
+        : `Добавлено в ваши <a href="#" onclick="openResourcesModal(); return false;" style="color:var(--accent);text-decoration:underline;">Точки опоры</a>: <b>«${_escapeResourceHtml(resource.title)}»</b> (${catLabel})`;
+
+    // Add banner message in chat
+    if (window.addMsg) {
+        window.addMsg('assistant', notice);
+    }
+    // If resources modal is currently open, refresh it
+    if (document.getElementById('resourcesModal')?.style.display === 'flex') {
+        loadResources();
+    }
+}
+window.addResourceFromAI = addResourceFromAI;

@@ -136,7 +136,23 @@ class SQLiteSessionManager:
                 """
             )
             conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS coping_resources (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    session_id TEXT,
+                    title TEXT NOT NULL,
+                    category TEXT DEFAULT 'joy',
+                    description TEXT DEFAULT '',
+                    created_at TEXT,
+                    FOREIGN KEY(session_id) REFERENCES sessions(id)
+                )
+                """
+            )
+            conn.execute(
                 "CREATE INDEX IF NOT EXISTS idx_thought_session ON thought_records(session_id)"
+            )
+            conn.execute(
+                "CREATE INDEX IF NOT EXISTS idx_resources_session ON coping_resources(session_id)"
             )
 
     def get_or_create(self, session_id: str) -> dict:
@@ -185,6 +201,12 @@ class SQLiteSessionManager:
             profile_row = cursor.fetchone()
             profile = json.loads(profile_row["profile_json"]) if profile_row else {}
 
+            cursor.execute(
+                "SELECT id, title, category, description, created_at FROM coping_resources WHERE session_id = ? ORDER BY id DESC",
+                (session_id,),
+            )
+            coping_resources = [dict(row) for row in cursor.fetchall()]
+
             return {
                 "id": session_id,
                 "created_at": session["created_at"] if session else now,
@@ -193,6 +215,7 @@ class SQLiteSessionManager:
                 "thought_records": thought_records,
                 "summary": summary,
                 "profile_memory": profile,
+                "coping_resources": coping_resources,
             }
 
     def add_message(self, session_id: str, role: str, content: str):
@@ -530,6 +553,90 @@ class SQLiteSessionManager:
                 "DELETE FROM session_summaries WHERE session_id = ?", (session_id,)
             )
             conn.commit()
+
+    def add_resource(
+        self, session_id: str, title: str, category: str = "joy", description: str = ""
+    ) -> int:
+        """Add a coping resource item for a session.
+
+        Args:
+            session_id: Unique session identifier.
+            title: Title or short description of the resource item.
+            category: Category (e.g. 'joy', 'body', 'people', 'places', 'creativity').
+            description: Optional additional details or notes.
+
+        Returns:
+            The newly created resource item ID.
+        """
+        now = datetime.now().isoformat()
+        with self._get_conn() as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                "INSERT OR IGNORE INTO sessions (id, created_at) VALUES (?, ?)",
+                (session_id, now),
+            )
+            cursor.execute(
+                """
+                INSERT INTO coping_resources (session_id, title, category, description, created_at)
+                VALUES (?, ?, ?, ?, ?)
+                """,
+                (session_id, title.strip(), category.strip(), description.strip(), now),
+            )
+            conn.commit()
+            return cursor.lastrowid
+
+    def get_resources(self, session_id: str, category: str | None = None) -> list[dict]:
+        """Retrieve coping resources for a session.
+
+        Args:
+            session_id: Unique session identifier.
+            category: Optional filter by category.
+
+        Returns:
+            List of resource dictionaries.
+        """
+        with self._get_conn() as conn:
+            cursor = conn.cursor()
+            if category:
+                cursor.execute(
+                    """
+                    SELECT id, session_id, title, category, description, created_at
+                    FROM coping_resources
+                    WHERE session_id = ? AND category = ?
+                    ORDER BY id DESC
+                    """,
+                    (session_id, category),
+                )
+            else:
+                cursor.execute(
+                    """
+                    SELECT id, session_id, title, category, description, created_at
+                    FROM coping_resources
+                    WHERE session_id = ?
+                    ORDER BY id DESC
+                    """,
+                    (session_id,),
+                )
+            return [dict(row) for row in cursor.fetchall()]
+
+    def delete_resource(self, session_id: str, resource_id: int) -> bool:
+        """Delete a coping resource by ID.
+
+        Args:
+            session_id: Unique session identifier.
+            resource_id: Resource identifier to delete.
+
+        Returns:
+            True if a row was deleted, False otherwise.
+        """
+        with self._get_conn() as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                "DELETE FROM coping_resources WHERE session_id = ? AND id = ?",
+                (session_id, resource_id),
+            )
+            conn.commit()
+            return cursor.rowcount > 0
 
     def save_session(self, session_id: str):
         # Database automatically persists on commit, so this is mostly a legacy stub for compatibility.

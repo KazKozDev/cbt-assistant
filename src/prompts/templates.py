@@ -22,6 +22,7 @@ class PromptManager:
         summary: str = None,
         retrieval_status: str = "grounded",
         profile_memory: dict = None,
+        coping_resources: list = None,
     ) -> str:
         base_prompt = self.config.get("system_prompts", {}).get(
             "default", "You are a helpful CBT assistant."
@@ -95,6 +96,17 @@ class PromptManager:
                 base_prompt += f"Искажение: {entry['distortion']}\n"
                 base_prompt += f"Рациональный ответ: {entry['rational_response']}\n\n"
             base_prompt += "--- КОНЕЦ ЗАПИСЕЙ ---\n"
+
+        # Coping Resources Context (Точки опоры)
+        if coping_resources:
+            base_prompt += (
+                "\n--- ТОЧКИ ОПОРЫ ПОЛЬЗОВАТЕЛЯ (ИСТОЧНИКИ СИЛ И САМОПОМОЩИ) ---\n"
+            )
+            for item in coping_resources[:10]:
+                cat = item.get("category", "joy")
+                desc = f" ({item['description']})" if item.get("description") else ""
+                base_prompt += f"- [{cat}] {item['title']}{desc}\n"
+            base_prompt += "--- КОНЕЦ ТОЧЕК ОПОРЫ ---\n"
 
         base_prompt += """
 Помни: Твоя цель — оказать сочувственную поддержку, помогая развивать более здоровые мыслительные паттерны и стратегии совладания. Всегда ставь безопасность на первое место.

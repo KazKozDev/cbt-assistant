@@ -591,3 +591,80 @@ def test_chat_add_sleep_record_tool(mock_chat, override_db):
     assert logs[0]["bed"] == "23:30"
     assert logs[0]["wake"] == "07:30"
     assert logs[0]["dur_hrs"] == 8.0
+
+
+def test_resource_tools_in_user_data_tools():
+    tools = get_user_data_tools()
+    tool_names = [t["function"]["name"] for t in tools]
+    assert "get_user_resources" in tool_names
+    assert "add_user_resource" in tool_names
+
+
+def test_execute_app_tool_resources(override_db):
+    session_id = "test_tool_resources"
+    # Test add_user_resource
+    tc_add = {
+        "function": {
+            "name": "add_user_resource",
+            "arguments": {
+                "title": "Слушать шум дождя",
+                "category": "joy",
+                "description": "через наушники",
+            },
+        }
+    }
+    content, event = execute_app_tool(session_id, tc_add)
+    assert "saved to Resource Bank" in content
+    assert event is not None
+    assert event["type"] == "add_resource"
+    assert event["resource"]["title"] == "Слушать шум дождя"
+
+    # Test get_user_resources
+    tc_get = {
+        "function": {
+            "name": "get_user_resources",
+            "arguments": {"category": "all"},
+        }
+    }
+    import json
+
+    content, event = execute_app_tool(session_id, tc_get)
+    assert event is None
+    data = json.loads(content)
+    assert len(data) == 1
+    assert data[0]["title"] == "Слушать шум дождя"
+
+
+def test_resources_api_crud(override_db):
+    session_id = "test_api_res"
+    # 1. Add resource
+    resp = client.post(
+        "/api/resources",
+        json={
+            "session_id": session_id,
+            "title": "Зеленый чай",
+            "category": "joy",
+            "description": "с жасмином",
+        },
+    )
+    assert resp.status_code == 200
+    res_data = resp.json()
+    assert res_data["status"] == "ok"
+    r_id = res_data["id"]
+    assert len(res_data["resources"]) == 1
+
+    # 2. Get resources
+    get_resp = client.get(f"/api/resources/{session_id}")
+    assert get_resp.status_code == 200
+    items = get_resp.json()["resources"]
+    assert len(items) == 1
+    assert items[0]["title"] == "Зеленый чай"
+
+    # 3. Delete resource
+    del_resp = client.delete(f"/api/resources/{session_id}/{r_id}")
+    assert del_resp.status_code == 200
+    assert len(del_resp.json()["resources"]) == 0
+
+    # 4. Delete non-existent
+    del_404 = client.delete(f"/api/resources/{session_id}/99999")
+    assert del_404.status_code == 404

@@ -9,7 +9,7 @@
     <link rel="stylesheet" href="vendor/fonts/inter.css">
     <script src="vendor/lucide.min.js"></script>
     <script src="vendor/chart.min.js"></script>
-    <link rel="stylesheet" href="css/style.css?v=24">
+    <link rel="stylesheet" href="css/style.css?v=30">
 </head>
 
 <body>
@@ -18,6 +18,8 @@
                 data-lucide="notebook-pen" style="width:20px"></i></button>
         <button class="sidebar-btn" onclick="openSleepHistoryModal()" title="Дневник сна" data-i18n-title="sidebar_sleep"><i data-lucide="moon"
                 style="width:20px"></i></button>
+        <button class="sidebar-btn" onclick="openResourcesModal()" title="Точки опоры" data-i18n-title="sidebar_resources"><i
+                data-lucide="anchor" style="width:20px"></i></button>
         <button class="sidebar-btn" onclick="openModal('testsMenuModal')" title="Самооценка" data-i18n-title="sidebar_assessment"><i
                 data-lucide="clipboard-list" style="width:20px"></i></button>
         <button class="sidebar-btn" onclick="openCalendar()" title="Календарь записей" data-i18n-title="sidebar_calendar"><i data-lucide="calendar"
@@ -369,6 +371,92 @@
             </h2>
             <div id="histContent" style="margin-top: 24px;"></div>
         </div>
+    </div>
+
+    <!-- Grounding Points collection workspace -->
+    <div class="modal-overlay" id="resourcesModal" onclick="if(event.target===this)closeModal('resourcesModal')">
+        <section class="modal resources-modal" role="dialog" aria-modal="true" aria-labelledby="resourcesModalTitle">
+            <header class="resources-modal-head">
+                <h2 class="resources-modal-title" id="resourcesModalTitle">
+                    <i data-lucide="anchor" aria-hidden="true"></i>
+                    <span data-i18n="resources_modal_title">Точки опоры</span>
+                </h2>
+                <div class="resources-modal-actions">
+                    <button type="button" class="suggest-btn entry-btn" onclick="openResourceAddModal()" id="addResourceBtn"
+                        title="Новая опора" data-i18n-title="add_resource_btn">
+                        <i data-lucide="plus" aria-hidden="true"></i>
+                        <span data-i18n="add_resource_btn">Новая опора</span>
+                    </button>
+                    <button type="button" class="close" onclick="closeModal('resourcesModal')" aria-label="Закрыть" data-i18n-title="close">
+                        <i data-lucide="x" aria-hidden="true"></i>
+                    </button>
+                </div>
+            </header>
+
+            <div class="resources-workspace">
+                <nav class="resource-category-nav" aria-label="Категории" data-i18n-title="resource_categories_label">
+                    <button type="button" class="resource-category-nav-item active" data-cat="all" onclick="filterResourcesCategory('all')" aria-pressed="true">
+                        <i data-lucide="library" aria-hidden="true"></i><span data-i18n="cat_all">Все опоры</span><span class="resource-category-count" id="resCount-all">0</span>
+                    </button>
+                    <button type="button" class="resource-category-nav-item" data-cat="joy" onclick="filterResourcesCategory('joy')" aria-pressed="false">
+                        <i data-lucide="coffee" aria-hidden="true"></i><span data-i18n="cat_joy">Маленькие радости</span><span class="resource-category-count" id="resCount-joy">0</span>
+                    </button>
+                    <button type="button" class="resource-category-nav-item" data-cat="body" onclick="filterResourcesCategory('body')" aria-pressed="false">
+                        <i data-lucide="activity" aria-hidden="true"></i><span data-i18n="cat_body">Тело и чувства</span><span class="resource-category-count" id="resCount-body">0</span>
+                    </button>
+                    <button type="button" class="resource-category-nav-item" data-cat="people" onclick="filterResourcesCategory('people')" aria-pressed="false">
+                        <i data-lucide="heart-handshake" aria-hidden="true"></i><span data-i18n="cat_people">Люди и контакт</span><span class="resource-category-count" id="resCount-people">0</span>
+                    </button>
+                    <button type="button" class="resource-category-nav-item" data-cat="places" onclick="filterResourcesCategory('places')" aria-pressed="false">
+                        <i data-lucide="compass" aria-hidden="true"></i><span data-i18n="cat_places">Места и среда</span><span class="resource-category-count" id="resCount-places">0</span>
+                    </button>
+                    <button type="button" class="resource-category-nav-item" data-cat="creativity" onclick="filterResourcesCategory('creativity')" aria-pressed="false">
+                        <i data-lucide="palette" aria-hidden="true"></i><span data-i18n="cat_creativity">Дела и творчество</span><span class="resource-category-count" id="resCount-creativity">0</span>
+                    </button>
+                </nav>
+
+                <section class="resources-collection" aria-live="polite">
+                    <header class="resources-collection-head">
+                        <h3 id="resourceSectionTitle" data-i18n="resource_section_all_title">Ваша коллекция</h3>
+                        <p id="resourceSectionDescription" data-i18n="resource_section_all_desc">То, что помогает вернуть спокойствие и ощущение устойчивости.</p>
+                    </header>
+                    <div id="resourcesList" class="resources-list"></div>
+                </section>
+            </div>
+        </section>
+    </div>
+
+    <!-- Grounding Point add modal -->
+    <div class="modal-overlay" id="resourceAddModal" onclick="if(event.target===this)closeResourceAddModal()">
+        <section class="modal resource-add-modal" role="dialog" aria-modal="true" aria-labelledby="resourceAddModalTitle">
+            <header class="resource-add-modal-head">
+                <h2 id="resourceAddModalTitle" data-i18n="resource_add_title">Новая точка опоры</h2>
+                <button type="button" class="close" onclick="closeResourceAddModal()" aria-label="Закрыть" data-i18n-title="close">
+                    <i data-lucide="x" aria-hidden="true"></i>
+                </button>
+            </header>
+            <form id="resourceAddForm" onsubmit="submitNewResource(event)">
+                <div class="resource-field">
+                    <label for="resTitleInput" data-i18n="resource_title_label">Что помогает вам вернуть устойчивость?</label>
+                    <input type="text" id="resTitleInput" class="resource-input" placeholder="Например, прогулка, тёплый чай или музыка" data-i18n-placeholder="resource_title_placeholder" required />
+                </div>
+                <div class="resource-field">
+                    <label for="resCategorySelect" data-i18n="resource_category_label">Категория</label>
+                    <select id="resCategorySelect" class="resource-select">
+                        <option value="joy" data-i18n="cat_joy">Маленькие радости</option>
+                        <option value="body" data-i18n="cat_body">Тело и чувства</option>
+                        <option value="people" data-i18n="cat_people">Люди и контакт</option>
+                        <option value="places" data-i18n="cat_places">Места и среда</option>
+                        <option value="creativity" data-i18n="cat_creativity">Дела и творчество</option>
+                    </select>
+                </div>
+                <div class="resource-field">
+                    <label for="resDescInput" data-i18n="resource_note_label">Заметка</label>
+                    <textarea id="resDescInput" class="resource-input" rows="3" placeholder="Когда это особенно помогает?" data-i18n-placeholder="resource_desc_placeholder"></textarea>
+                </div>
+                <button type="submit" class="btn-primary static-accent" id="resourceSaveBtn" data-i18n="resource_save">Сохранить</button>
+            </form>
+        </section>
     </div>
 
     <!-- GAD-7 Modal -->
@@ -878,11 +966,11 @@
         </div>
     </div>
 
-    <script src="js/ui.js?v=25"></script>
+    <script src="js/ui.js?v=29"></script>
     <script src="js/report.js?v=2"></script>
-    <script src="js/chat_manager.js?v=5"></script>
-    <script src="js/cbt_tools.js?v=13"></script>
-    <script src="js/main.js?v=5"></script>
+    <script src="js/chat_manager.js?v=8"></script>
+    <script src="js/cbt_tools.js?v=18"></script>
+    <script src="js/main.js?v=8"></script>
 
     <!-- Fullscreen PMR Overlay -->
     <div id="pmrOverlay" class="pmr-overlay" style="display:none;">

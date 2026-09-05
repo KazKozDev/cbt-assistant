@@ -40,6 +40,8 @@ async function sendMessage() {
                     window.addThoughtRecordFromAI(ev.record);
                 } else if (ev.type === 'add_sleep_log' && window.addSleepLogFromAI) {
                     window.addSleepLogFromAI(ev.log);
+                } else if (ev.type === 'add_resource' && window.addResourceFromAI) {
+                    window.addResourceFromAI(ev.resource);
                 } else if (ev.type === 'start_sos_exercise' && window.startSosExerciseFromAI) {
                     window.startSosExerciseFromAI(ev);
                 } else if (ev.type === 'start_breathing' && window.startBreathingFromAI) {
