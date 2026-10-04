@@ -1,26 +1,18 @@
 # Architecture
 
-CBT Assistant is a browser frontend backed by FastAPI, local Ollama chat and embedding models, a Markdown CBT knowledge base, and SQLite persistence.
+CBT Assistant is a browser frontend backed by FastAPI, a local Ollama chat model, a FastEmbed RAG pipeline, a Markdown CBT knowledge base, and SQLite persistence.
 
-```text
-Browser UI
-   ↓
-FastAPI REST + WebSocket API
-   ↓
-Prompt assembly ← CBT knowledge search
-   ↓                     ↓
-Ollama chat          Ollama embeddings
-   ↓                     ↓
-Response             Markdown knowledge base
-   └──────── SQLite + browser localStorage
-```
+<p align="center">
+  <img src="../assets/architecture.svg" alt="CBT Assistant architecture" width="100%">
+</p>
+
 
 ## Request path
 
-1. **Startup** — FastAPI initializes `data/cbt_sessions.db`, fingerprints `knowledge_base/*.md`, and restores a matching cached index or embeds the complete changed corpus through Ollama.
+1. **Startup** — FastAPI initializes `data/cbt_sessions.db`, fingerprints `knowledge_base/*.md`, and restores a matching cached index or embeds the complete changed corpus locally via FastEmbed (ONNX).
 2. **Retrieve** — every chat transport runs the same semantic search, relevance threshold, provenance serialization, and local retrieval trace.
 3. **Assemble** — the prompt combines explicitly delimited evidence passages, recent messages, synchronized records, structured profile memory, and any rolling session summary. Retrieved text is treated as data, not instructions.
-4. **Generate** — `src/llm/ollama_client.py` sends the request to the configured Ollama model. REST, streaming, or WebSocket responses return to the browser.
+4. **Generate** — `src/llm/ollama_client.py` sends the request to the configured Ollama model. REST, SSE streaming, or WebSocket responses return to the browser.
 5. **Persist** — messages and structured records are written to SQLite. Explicit personal facts update the profile immediately; after the configured threshold, `src/memory/summarizer.py` refreshes the session summary on every chat transport.
 
 ## RAG engineering contract
@@ -30,7 +22,7 @@ The bundled knowledge base covers clinical CBT guidance, anxiety protocols, inso
 - Markdown is split by its complete heading hierarchy. Oversized sections are bounded with controlled overlap. The current corpus produces 53 addressable chunks instead of 34 coarse `##` sections.
 - The index is fingerprinted from document content and chunking settings. A matching NumPy index is restored from `data/rag_index.npz`; changed content is embedded in batches and swapped into service only after a complete successful build.
 - A failed first build prevents RAG from reporting ready. If a rebuild fails while an older complete index is in memory, status becomes `degraded` and the previous index remains usable.
-- The default relevance threshold is `0.35`. An unsupported clinical request must not receive an invented protocol or clinical justification.
+- The default relevance threshold is `0.46`. An unsupported clinical request must not receive an invented protocol or clinical justification.
 - Each retrieval writes an ignored local trace to `data/rag_traces.jsonl`: query, candidates, selected chunk IDs, scores, latency, embedding model, threshold, and index version. These traces can contain sensitive query text.
 - `GET /api/knowledge/status` reports readiness, index version, model, threshold, cache use, chunk count, and the latest index error.
 - `GET /api/knowledge/search?q=sleep&top_k=3` exposes the same versioned index used by chat.
@@ -65,7 +57,7 @@ The model can call application functions when relevant:
 
 | Setting | Default | What it means |
 |---|---|---|
-| App address | `http://localhost:8000` | Browser interface and API; server binds to `0.0.0.0:8000` |
+| App address | `http://127.0.0.1:8000` | Browser interface and API; server binds to `127.0.0.1:8000` (override with `HOST` / `PORT`) |
 | Ollama address | `http://127.0.0.1:11434` | Override with `OLLAMA_BASE_URL` |
 | Chat model | `qwen3.5:9b` | `OLLAMA_MODEL` or `CBT_ASSISTANT_CHAT_MODEL`; any installed completion model can be selected in Settings |
 | Embedding model | `sentence-transformers/paraphrase-multilingual-mpnet-base-v2` | FastEmbed ONNX model; override with `RAG_EMBED_MODEL` |

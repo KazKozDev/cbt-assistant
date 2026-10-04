@@ -91,7 +91,7 @@ async function downloadAsPDF() {
 <head>
 <meta charset="UTF-8">
 <title>КПТ-выписка · ${reportDate}</title>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"><\/script>
+<script src="/vendor/chart.min.js"><\/script>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f8f7f5; color: #1a1a2e; font-size: 13px; }

@@ -12,20 +12,17 @@ The following paths use the machine hosting the application and its configured l
 - SQLite persistence;
 - bundled SOS images and ambient audio.
 
-The application is local-first rather than strictly offline. These optional or frontend resources can contact external services:
+The application is local-first. Core chat, RAG, and journaling are strictly offline. These optional features can contact external services:
 
-- Google Fonts;
-- Lucide icons and Chart.js loaded from public CDNs;
-- Microsoft Edge TTS, which receives selected speech text;
-- browser speech recognition, depending on the browser and operating system;
-- YouTube thumbnails and video playback;
-- Chart.js loaded when a printable PDF report window is created.
+- Microsoft Edge TTS (optional voice responses);
+- browser speech recognition (optional microphone input, depending on browser);
+- YouTube thumbnails and video playback (optional SOS ambient media).
 
-A strictly offline deployment requires replacing or disabling those external fonts, scripts, speech, and video integrations.
+Frontend UI assets (Inter font, Lucide icons, and Chart.js for dashboards and PDF reports) are bundled locally for 100% offline use.
 
 ## Network and data boundaries
 
-- The FastAPI server binds to `0.0.0.0:8000` and enables permissive CORS.
+- The FastAPI server binds to `127.0.0.1:8000` by default. It can be exposed to the local network via `HOST=0.0.0.0`.
 - The application has no user accounts, authentication, encryption layer, or multi-user isolation.
 - Do not expose the server to the public internet or an untrusted network without authentication and restrictive network controls.
 - Personal profile memory is local and session-scoped but not encrypted.

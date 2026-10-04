@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run the live retrieval benchmark against the configured Ollama embedding model."""
+"""Run the live retrieval benchmark against the configured FastEmbed model."""
 
 import argparse
 import asyncio
@@ -25,8 +25,7 @@ async def main() -> None:
     cases = json.loads((PROJECT_ROOT / "evals/rag_retrieval.json").read_text())
     rag = SemanticRAG(
         PROJECT_ROOT / "knowledge_base",
-        os.getenv("OLLAMA_BASE_URL", "http://localhost:11434"),
-        os.getenv(
+        embed_model=os.getenv(
             "RAG_EMBED_MODEL",
             "sentence-transformers/paraphrase-multilingual-mpnet-base-v2",
         ),
